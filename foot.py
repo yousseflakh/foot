@@ -1,11 +1,9 @@
 import streamlit as st
-import requests
 import random
-import json
 
 # إعداد الصفحة
 st.set_page_config(
-    page_title="🧠 تحدي العقول",
+    page_title="🧠 تحدي العقول - عربي",
     page_icon="🧠",
     layout="wide"
 )
@@ -204,6 +202,203 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ==================== مكتبة الأسئلة العربية ====================
+ARABIC_QUESTIONS = [
+    # تاريخ
+    {
+        'question': 'في أي عام سقطت الخلافة العثمانية؟',
+        'options': ['1918', '1922', '1924', '1920'],
+        'correct': 1,
+        'category': 'تاريخ',
+        'correct_answer': '1922'
+    },
+    {
+        'question': 'من هو مؤسس الدولة العثمانية؟',
+        'options': ['عثمان الأول', 'أورخان الأول', 'مراد الأول', 'بايزيد الأول'],
+        'correct': 0,
+        'category': 'تاريخ',
+        'correct_answer': 'عثمان الأول'
+    },
+    {
+        'question': 'في أي عام وقعت معركة حطين؟',
+        'options': ['1187', '1189', '1191', '1185'],
+        'correct': 0,
+        'category': 'تاريخ',
+        'correct_answer': '1187'
+    },
+    {
+        'question': 'من هو القائد المسلم الذي فتح الأندلس؟',
+        'options': ['طارق بن زياد', 'موسى بن نصير', 'عبد الرحمن الداخل', 'محمد الفاتح'],
+        'correct': 0,
+        'category': 'تاريخ',
+        'correct_answer': 'طارق بن زياد'
+    },
+    {
+        'question': 'في أي عام هبط الإنسان على سطح القمر؟',
+        'options': ['1965', '1969', '1971', '1973'],
+        'correct': 1,
+        'category': 'تاريخ',
+        'correct_answer': '1969'
+    },
+    
+    # جغرافيا
+    {
+        'question': 'ما هو أطول نهر في العالم؟',
+        'options': ['نهر الأمازون', 'نهر النيل', 'نهر المسيسيبي', 'نهر اليانغتسي'],
+        'correct': 1,
+        'category': 'جغرافيا',
+        'correct_answer': 'نهر النيل'
+    },
+    {
+        'question': 'ما هي عاصمة اليابان؟',
+        'options': ['بكين', 'سيئول', 'طوكيو', 'بانكوك'],
+        'correct': 2,
+        'category': 'جغرافيا',
+        'correct_answer': 'طوكيو'
+    },
+    {
+        'question': 'ما هي عاصمة مصر؟',
+        'options': ['الإسكندرية', 'القاهرة', 'الجيزة', 'الأقصر'],
+        'correct': 1,
+        'category': 'جغرافيا',
+        'correct_answer': 'القاهرة'
+    },
+    {
+        'question': 'ما هو أكبر محيط في العالم؟',
+        'options': ['المحيط الأطلسي', 'المحيط الهندي', 'المحيط الهادئ', 'المحيط المتجمد'],
+        'correct': 2,
+        'category': 'جغرافيا',
+        'correct_answer': 'المحيط الهادئ'
+    },
+    {
+        'question': 'ما هي أصغر دولة في العالم من حيث المساحة؟',
+        'options': ['الفاتيكان', 'موناكو', 'ناورو', 'سان مارينو'],
+        'correct': 0,
+        'category': 'جغرافيا',
+        'correct_answer': 'الفاتيكان'
+    },
+    
+    # علوم
+    {
+        'question': 'من هو مخترع المصباح الكهربائي؟',
+        'options': ['توماس أديسون', 'نيكولا تسلا', 'ألبرت أينشتاين', 'غراهام بيل'],
+        'correct': 0,
+        'category': 'علوم',
+        'correct_answer': 'توماس أديسون'
+    },
+    {
+        'question': 'كم عدد الكواكب في المجموعة الشمسية؟',
+        'options': ['7', '8', '9', '10'],
+        'correct': 1,
+        'category': 'علوم',
+        'correct_answer': '8'
+    },
+    {
+        'question': 'ما هو أسرع حيوان بري؟',
+        'options': ['الأسد', 'الغزال', 'الفهد', 'الأرنب'],
+        'correct': 2,
+        'category': 'علوم',
+        'correct_answer': 'الفهد'
+    },
+    {
+        'question': 'ما هي أقرب كوكب إلى الشمس؟',
+        'options': ['الزهرة', 'عطارد', 'الأرض', 'المريخ'],
+        'correct': 1,
+        'category': 'علوم',
+        'correct_answer': 'عطارد'
+    },
+    {
+        'question': 'من هو مكتشف الجاذبية؟',
+        'options': ['أينشتاين', 'نيوتن', 'جاليليو', 'كوبرنيكوس'],
+        'correct': 1,
+        'category': 'علوم',
+        'correct_answer': 'نيوتن'
+    },
+    
+    # أدب
+    {
+        'question': 'من هو مؤلف رواية "الجريمة والعقاب"؟',
+        'options': ['فيودور دوستويفسكي', 'ليو تولستوي', 'أنطون تشيخوف', 'نيكولاي غوغول'],
+        'correct': 0,
+        'category': 'أدب',
+        'correct_answer': 'فيودور دوستويفسكي'
+    },
+    {
+        'question': 'من هو شاعر المعلقات؟',
+        'options': ['امرؤ القيس', 'عنترة بن شداد', 'زهير بن أبي سلمى', 'طرفة بن العبد'],
+        'correct': 0,
+        'category': 'أدب',
+        'correct_answer': 'امرؤ القيس'
+    },
+    {
+        'question': 'من هو مؤلف كتاب "الأيام"؟',
+        'options': ['طه حسين', 'نجيب محفوظ', 'عباس العقاد', 'توفيق الحكيم'],
+        'correct': 0,
+        'category': 'أدب',
+        'correct_answer': 'طه حسين'
+    },
+    
+    # دين
+    {
+        'question': 'من هو النبي الذي أنزل عليه الزبور؟',
+        'options': ['موسى', 'داود', 'سليمان', 'إبراهيم'],
+        'correct': 1,
+        'category': 'دين',
+        'correct_answer': 'داود'
+    },
+    {
+        'question': 'كم عدد سور القرآن الكريم؟',
+        'options': ['113', '114', '115', '116'],
+        'correct': 1,
+        'category': 'دين',
+        'correct_answer': '114'
+    },
+    {
+        'question': 'ما هي أول صلاة فرضت على المسلمين؟',
+        'options': ['الفجر', 'الظهر', 'العصر', 'المغرب'],
+        'correct': 0,
+        'category': 'دين',
+        'correct_answer': 'الفجر'
+    },
+    
+    # ثقافة عامة
+    {
+        'question': 'ما هي اللغة الأكثر تحدثاً في العالم كلغة أم؟',
+        'options': ['الإنجليزية', 'الإسبانية', 'الصينية الماندرين', 'الهندية'],
+        'correct': 2,
+        'category': 'ثقافة',
+        'correct_answer': 'الصينية الماندرين'
+    },
+    {
+        'question': 'من هو مؤسس علم الجبر؟',
+        'options': ['الخوارزمي', 'ابن سينا', 'الفارابي', 'البيروني'],
+        'correct': 0,
+        'category': 'ثقافة',
+        'correct_answer': 'الخوارزمي'
+    },
+    {
+        'question': 'ما هي عملة المملكة العربية السعودية؟',
+        'options': ['دينار', 'درهم', 'ريال', 'دولار'],
+        'correct': 2,
+        'category': 'اقتصاد',
+        'correct_answer': 'ريال'
+    },
+    {
+        'question': 'ما هي عاصمة العراق؟',
+        'options': ['بغداد', 'البصرة', 'الموصل', 'أربيل'],
+        'correct': 0,
+        'category': 'جغرافيا',
+        'correct_answer': 'بغداد'
+    },
+    {
+        'question': 'من هو مؤسس علم الاجتماع؟',
+        'options': ['ابن خلدون', 'دوركايم', 'ماركس', 'فيبر'],
+        'correct': 0,
+        'category': 'ثقافة',
+        'correct_answer': 'ابن خلدون'
+    }
+]
+
 # تهيئة حالة اللعبة
 if 'questions' not in st.session_state:
     st.session_state.questions = []
@@ -213,195 +408,18 @@ if 'questions' not in st.session_state:
     st.session_state.correct = 0
     st.session_state.answered = False
     st.session_state.game_over = False
-    st.session_state.difficulty = 'hard'
     st.session_state.message = ""
-    st.session_state.use_fallback = False
     st.session_state.selected = None
-    st.session_state.source = 'api'
 
-def load_arabic_questions():
-    """جلب أسئلة من API عربي"""
-    try:
-        # محاولة جلب الأسئلة من API عربي
-        url = "https://opentdb.com/api.php?amount=10&difficulty=hard&type=multiple"
-        response = requests.get(url, timeout=10)
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data['response_code'] == 0:
-                questions = []
-                for q in data['results']:
-                    # تنقية النص
-                    import html
-                    question = html.unescape(q['question'])
-                    correct_answer = html.unescape(q['correct_answer'])
-                    incorrect_answers = [html.unescape(a) for a in q['incorrect_answers']]
-                    
-                    options = [correct_answer] + incorrect_answers
-                    random.shuffle(options)
-                    
-                    # ترجمة الفئات
-                    categories = {
-                        'General Knowledge': 'معرفة عامة',
-                        'Science': 'علوم',
-                        'History': 'تاريخ',
-                        'Geography': 'جغرافيا',
-                        'Art': 'فن',
-                        'Literature': 'أدب',
-                        'Music': 'موسيقى',
-                        'Sports': 'رياضة',
-                        'Entertainment': 'ترفيه',
-                        'Mythology': 'أساطير',
-                        'Politics': 'سياسة',
-                        'Celebrities': 'مشاهير'
-                    }
-                    
-                    category = q['category']
-                    for eng, ar in categories.items():
-                        if eng in category:
-                            category = ar
-                            break
-                    
-                    q_data = {
-                        'question': question,
-                        'options': options,
-                        'correct': options.index(correct_answer),
-                        'category': category,
-                        'correct_answer': correct_answer
-                    }
-                    questions.append(q_data)
-                
-                st.session_state.questions = questions
-                st.session_state.current_q = 0
-                st.session_state.score = 0
-                st.session_state.total = 0
-                st.session_state.correct = 0
-                st.session_state.answered = False
-                st.session_state.game_over = False
-                st.session_state.message = ""
-                st.session_state.use_fallback = False
-                st.session_state.selected = None
-                return True
-                
-    except Exception as e:
-        st.error(f"⚠️ خطأ في تحميل الأسئلة: {str(e)}")
+def load_arabic_questions(num=10):
+    """تحميل أسئلة عربية"""
+    if len(ARABIC_QUESTIONS) >= num:
+        questions = random.sample(ARABIC_QUESTIONS, num)
+    else:
+        questions = ARABIC_QUESTIONS.copy()
+        random.shuffle(questions)
     
-    return False
-
-def load_fallback_questions():
-    """أسئلة احتياطية بالعربية"""
-    questions = [
-        {
-            'question': 'ما هو أطول نهر في العالم؟',
-            'options': ['نهر الأمازون', 'نهر النيل', 'نهر المسيسيبي', 'نهر اليانغتسي'],
-            'correct': 1,
-            'category': 'جغرافيا',
-            'correct_answer': 'نهر النيل'
-        },
-        {
-            'question': 'في أي عام هبط الإنسان على سطح القمر؟',
-            'options': ['1965', '1969', '1971', '1973'],
-            'correct': 1,
-            'category': 'تاريخ',
-            'correct_answer': '1969'
-        },
-        {
-            'question': 'ما هي عاصمة اليابان؟',
-            'options': ['بكين', 'سيئول', 'طوكيو', 'بانكوك'],
-            'correct': 2,
-            'category': 'جغرافيا',
-            'correct_answer': 'طوكيو'
-        },
-        {
-            'question': 'من هو مخترع المصباح الكهربائي؟',
-            'options': ['توماس أديسون', 'نيكولا تسلا', 'ألبرت أينشتاين', 'غراهام بيل'],
-            'correct': 0,
-            'category': 'علوم',
-            'correct_answer': 'توماس أديسون'
-        },
-        {
-            'question': 'كم عدد الكواكب في المجموعة الشمسية؟',
-            'options': ['7', '8', '9', '10'],
-            'correct': 1,
-            'category': 'علوم',
-            'correct_answer': '8'
-        },
-        {
-            'question': 'ما هي اللغة الأكثر تحدثاً في العالم كلغة أم؟',
-            'options': ['الإنجليزية', 'الإسبانية', 'الصينية الماندرين', 'الهندية'],
-            'correct': 2,
-            'category': 'ثقافة',
-            'correct_answer': 'الصينية الماندرين'
-        },
-        {
-            'question': 'من هو مؤسس علم الجبر؟',
-            'options': ['الخوارزمي', 'ابن سينا', 'الفارابي', 'البيروني'],
-            'correct': 0,
-            'category': 'تاريخ',
-            'correct_answer': 'الخوارزمي'
-        },
-        {
-            'question': 'ما هو أسرع حيوان بري؟',
-            'options': ['الأسد', 'الغزال', 'الفهد', 'الأرنب'],
-            'correct': 2,
-            'category': 'علوم',
-            'correct_answer': 'الفهد'
-        },
-        {
-            'question': 'من هو مؤلف رواية "الجريمة والعقاب"؟',
-            'options': ['فيودور دوستويفسكي', 'ليو تولستوي', 'أنطون تشيخوف', 'نيكولاي غوغول'],
-            'correct': 0,
-            'category': 'أدب',
-            'correct_answer': 'فيودور دوستويفسكي'
-        },
-        {
-            'question': 'ما هي أصغر دولة في العالم من حيث المساحة؟',
-            'options': ['الفاتيكان', 'موناكو', 'ناورو', 'سان مارينو'],
-            'correct': 0,
-            'category': 'جغرافيا',
-            'correct_answer': 'الفاتيكان'
-        },
-        {
-            'question': 'من هو مؤسس الدولة العثمانية؟',
-            'options': ['عثمان الأول', 'أورخان الأول', 'مراد الأول', 'بايزيد الأول'],
-            'correct': 0,
-            'category': 'تاريخ',
-            'correct_answer': 'عثمان الأول'
-        },
-        {
-            'question': 'ما هي عاصمة مصر؟',
-            'options': ['الإسكندرية', 'القاهرة', 'الجيزة', 'الأقصر'],
-            'correct': 1,
-            'category': 'جغرافيا',
-            'correct_answer': 'القاهرة'
-        },
-        {
-            'question': 'ما هو أكبر محيط في العالم؟',
-            'options': ['المحيط الأطلسي', 'المحيط الهندي', 'المحيط الهادئ', 'المحيط المتجمد'],
-            'correct': 2,
-            'category': 'جغرافيا',
-            'correct_answer': 'المحيط الهادئ'
-        },
-        {
-            'question': 'من هو النبي الذي أنزل عليه الزبور؟',
-            'options': ['موسى', 'داود', 'سليمان', 'إبراهيم'],
-            'correct': 1,
-            'category': 'دين',
-            'correct_answer': 'داود'
-        },
-        {
-            'question': 'ما هي عملة المملكة العربية السعودية؟',
-            'options': ['دينار', 'درهم', 'ريال', 'دولار'],
-            'correct': 2,
-            'category': 'اقتصاد',
-            'correct_answer': 'ريال'
-        }
-    ]
-    
-    # اختيار 10 أسئلة عشوائياً
-    selected_questions = random.sample(questions, min(10, len(questions)))
-    
-    st.session_state.questions = selected_questions
+    st.session_state.questions = questions
     st.session_state.current_q = 0
     st.session_state.score = 0
     st.session_state.total = 0
@@ -409,39 +427,22 @@ def load_fallback_questions():
     st.session_state.answered = False
     st.session_state.game_over = False
     st.session_state.message = ""
-    st.session_state.use_fallback = True
     st.session_state.selected = None
 
 # عرض العنوان
-st.markdown('<h1 class="main-title">🧠 تحدي العقول</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-title">🧠 تحدي العقول - عربي</h1>', unsafe_allow_html=True)
 
 # الشريط الجانبي
 with st.sidebar:
     st.markdown("## ⚙️ الإعدادات")
     st.markdown("---")
     
-    # اختيار صعوبة الأسئلة
-    difficulty = st.selectbox(
-        "🎯 اختر الصعوبة:",
-        ['easy', 'medium', 'hard'],
-        format_func=lambda x: {'easy': '🟢 سهل', 'medium': '🟡 متوسط', 'hard': '🔴 صعب'}[x],
-        index=2
-    )
-    
     # اختيار عدد الأسئلة
     num_questions = st.slider("📚 عدد الأسئلة:", 5, 20, 10)
     
     if st.button("🚀 بدء لعبة جديدة", use_container_width=True):
-        st.session_state.difficulty = difficulty
         with st.spinner("⏳ جاري تحميل الأسئلة..."):
-            # محاولة تحميل أسئلة من API
-            if not load_arabic_questions():
-                st.warning("⚠️ استخدام الأسئلة الاحتياطية (مكتبة عربية)")
-                load_fallback_questions()
-            else:
-                # تقليل عدد الأسئلة حسب الاختيار
-                if num_questions < len(st.session_state.questions):
-                    st.session_state.questions = random.sample(st.session_state.questions, num_questions)
+            load_arabic_questions(num_questions)
         st.rerun()
     
     st.markdown("---")
@@ -456,11 +457,7 @@ with st.sidebar:
             st.metric("✅ النجاح", f"{pct:.0f}%")
         
         st.metric("📝 الإجابات", f"{st.session_state.correct}/{st.session_state.total}")
-        
-        if st.session_state.use_fallback:
-            st.info("📚 أسئلة عربية")
-        else:
-            st.success("🌐 أسئلة متنوعة")
+        st.info("📚 أسئلة عربية 100%")
 
 # المحتوى الرئيسي
 if not st.session_state.questions:
@@ -471,22 +468,20 @@ if not st.session_state.questions:
         <div class="start-box">
             <h2>🎯 اختبر معرفتك!</h2>
             <p style="font-size: 1.1em; margin: 20px 0;">
-                أسئلة ثقافية عامة عربية
+                أسئلة ثقافية عامة عربية 100%
             </p>
             <p style="color: #8899bb;">
                 📚 اختر عدد الأسئلة من القائمة الجانبية<br>
                 ⭐ 10 نقاط لكل إجابة صحيحة<br>
-                🔥 اختر مستوى الصعوبة<br>
-                📖 أسئلة متنوعة في جميع المجالات
+                📖 أكثر من 25 سؤال في مجالات متنوعة<br>
+                🇸🇦 جميع الأسئلة باللغة العربية
             </p>
         </div>
         """, unsafe_allow_html=True)
         
         if st.button("🎮 ابدأ اللعب", use_container_width=True):
             with st.spinner("⏳ جاري تحميل الأسئلة..."):
-                if not load_arabic_questions():
-                    st.warning("⚠️ استخدام الأسئلة الاحتياطية")
-                    load_fallback_questions()
+                load_arabic_questions(10)
             st.rerun()
 
 else:
@@ -607,9 +602,8 @@ else:
         
         if st.button("🔄 لعب مرة أخرى", use_container_width=True):
             with st.spinner("⏳ جاري تحميل الأسئلة..."):
-                if not load_arabic_questions():
-                    load_fallback_questions()
+                load_arabic_questions(num_questions)
             st.rerun()
 
 st.markdown("---")
-st.caption("📚 مصدر الأسئلة: مكتبة أسئلة عربية | أسئلة لا متناهية")
+st.caption("📚 أسئلة عربية 100% | 🇸🇦 جميع الأسئلة باللغة العربية | لا حاجة للإنترنت")
