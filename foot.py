@@ -889,4 +889,34 @@ def game_screen():
         # تقييم الأداء
         st.markdown("---")
         if correct == total:
-            st.success("🌟🌟🌟
+            st.success("🌟🌟🌟 **عبقري! إجابة كاملة في أسئلة صعبة جداً!**")
+        elif correct >= total * 0.7:
+            st.success("⭐ **أداء ممتاز! أنت خبير حقيقي!**")
+        elif correct >= total * 0.5:
+            st.info("📚 **أداء جيد! مع المزيد ستصل للاحتراف!**")
+        else:
+            st.warning("💪 **لا تستسلم! هذه الأسئلة صعبة فعلاً!**")
+        
+        # عرض لوحة المتصدرين الكاملة
+        st.markdown("---")
+        st.markdown("### 🏆 لوحة المتصدرين")
+        display_leaderboard(limit=20)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔄 لعب مرة أخرى", use_container_width=True):
+                load_hard_questions(10)
+                reset_game()
+                st.rerun()
+        with col2:
+            if st.button("➕ تحميل المزيد", use_container_width=True):
+                with st.spinner("جاري تحميل المزيد..."):
+                    load_more_questions()
+                    reset_game()
+                st.rerun()
+
+# ==================== التشغيل الرئيسي ====================
+if not st.session_state.logged_in:
+    login_screen()
+else:
+    game_screen()
