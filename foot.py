@@ -901,6 +901,7 @@ def game_screen():
                 if st.button("🏁 إنهاء التحدي", use_container_width=True):
                     end_game()
                     st.rerun()
+                    st.caption("Developed by Youssef Lakhdar")
 
 # ==================== التشغيل الرئيسي ====================
 if not st.session_state.logged_in:
