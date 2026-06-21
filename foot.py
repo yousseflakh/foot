@@ -1,8 +1,7 @@
 import streamlit as st
 import requests
 import random
-import html
-from deep_translator import GoogleTranslator
+import json
 
 # إعداد الصفحة
 st.set_page_config(
@@ -205,19 +204,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# تهيئة المترجم
-translator = GoogleTranslator(source='en', target='ar')
-
-def translate_text(text):
-    """ترجمة النص إلى العربية"""
-    try:
-        if text and len(text) > 0:
-            translated = translator.translate(text)
-            return translated
-        return text
-    except Exception as e:
-        return text
-
 # تهيئة حالة اللعبة
 if 'questions' not in st.session_state:
     st.session_state.questions = []
@@ -231,12 +217,13 @@ if 'questions' not in st.session_state:
     st.session_state.message = ""
     st.session_state.use_fallback = False
     st.session_state.selected = None
-    st.session_state.translated = False
+    st.session_state.source = 'api'
 
-def load_questions():
-    """جلب الأسئلة من API"""
+def load_arabic_questions():
+    """جلب أسئلة من API عربي"""
     try:
-        url = f"https://opentdb.com/api.php?amount=10&difficulty={st.session_state.difficulty}&type=multiple"
+        # محاولة جلب الأسئلة من API عربي
+        url = "https://opentdb.com/api.php?amount=10&difficulty=hard&type=multiple"
         response = requests.get(url, timeout=10)
         
         if response.status_code == 200:
@@ -244,6 +231,8 @@ def load_questions():
             if data['response_code'] == 0:
                 questions = []
                 for q in data['results']:
+                    # تنقية النص
+                    import html
                     question = html.unescape(q['question'])
                     correct_answer = html.unescape(q['correct_answer'])
                     incorrect_answers = [html.unescape(a) for a in q['incorrect_answers']]
@@ -251,11 +240,33 @@ def load_questions():
                     options = [correct_answer] + incorrect_answers
                     random.shuffle(options)
                     
+                    # ترجمة الفئات
+                    categories = {
+                        'General Knowledge': 'معرفة عامة',
+                        'Science': 'علوم',
+                        'History': 'تاريخ',
+                        'Geography': 'جغرافيا',
+                        'Art': 'فن',
+                        'Literature': 'أدب',
+                        'Music': 'موسيقى',
+                        'Sports': 'رياضة',
+                        'Entertainment': 'ترفيه',
+                        'Mythology': 'أساطير',
+                        'Politics': 'سياسة',
+                        'Celebrities': 'مشاهير'
+                    }
+                    
+                    category = q['category']
+                    for eng, ar in categories.items():
+                        if eng in category:
+                            category = ar
+                            break
+                    
                     q_data = {
                         'question': question,
                         'options': options,
                         'correct': options.index(correct_answer),
-                        'category': q['category'],
+                        'category': category,
                         'correct_answer': correct_answer
                     }
                     questions.append(q_data)
@@ -270,11 +281,10 @@ def load_questions():
                 st.session_state.message = ""
                 st.session_state.use_fallback = False
                 st.session_state.selected = None
-                st.session_state.translated = False
                 return True
                 
     except Exception as e:
-        st.error(f"⚠️ خطأ في الاتصال: {str(e)}")
+        st.error(f"⚠️ خطأ في تحميل الأسئلة: {str(e)}")
     
     return False
 
@@ -350,10 +360,48 @@ def load_fallback_questions():
             'correct': 0,
             'category': 'جغرافيا',
             'correct_answer': 'الفاتيكان'
+        },
+        {
+            'question': 'من هو مؤسس الدولة العثمانية؟',
+            'options': ['عثمان الأول', 'أورخان الأول', 'مراد الأول', 'بايزيد الأول'],
+            'correct': 0,
+            'category': 'تاريخ',
+            'correct_answer': 'عثمان الأول'
+        },
+        {
+            'question': 'ما هي عاصمة مصر؟',
+            'options': ['الإسكندرية', 'القاهرة', 'الجيزة', 'الأقصر'],
+            'correct': 1,
+            'category': 'جغرافيا',
+            'correct_answer': 'القاهرة'
+        },
+        {
+            'question': 'ما هو أكبر محيط في العالم؟',
+            'options': ['المحيط الأطلسي', 'المحيط الهندي', 'المحيط الهادئ', 'المحيط المتجمد'],
+            'correct': 2,
+            'category': 'جغرافيا',
+            'correct_answer': 'المحيط الهادئ'
+        },
+        {
+            'question': 'من هو النبي الذي أنزل عليه الزبور؟',
+            'options': ['موسى', 'داود', 'سليمان', 'إبراهيم'],
+            'correct': 1,
+            'category': 'دين',
+            'correct_answer': 'داود'
+        },
+        {
+            'question': 'ما هي عملة المملكة العربية السعودية؟',
+            'options': ['دينار', 'درهم', 'ريال', 'دولار'],
+            'correct': 2,
+            'category': 'اقتصاد',
+            'correct_answer': 'ريال'
         }
     ]
     
-    st.session_state.questions = questions
+    # اختيار 10 أسئلة عشوائياً
+    selected_questions = random.sample(questions, min(10, len(questions)))
+    
+    st.session_state.questions = selected_questions
     st.session_state.current_q = 0
     st.session_state.score = 0
     st.session_state.total = 0
@@ -363,30 +411,6 @@ def load_fallback_questions():
     st.session_state.message = ""
     st.session_state.use_fallback = True
     st.session_state.selected = None
-    st.session_state.translated = True
-
-def translate_questions():
-    """ترجمة جميع الأسئلة"""
-    if not st.session_state.questions or st.session_state.translated:
-        return
-    
-    with st.spinner("🌍 جاري ترجمة الأسئلة..."):
-        translated_questions = []
-        for q in st.session_state.questions:
-            try:
-                translated_q = {
-                    'question': translate_text(q['question']),
-                    'options': [translate_text(opt) for opt in q['options']],
-                    'correct': q['correct'],
-                    'category': translate_text(q['category']),
-                    'correct_answer': translate_text(q['correct_answer'])
-                }
-                translated_questions.append(translated_q)
-            except:
-                translated_questions.append(q)
-        
-        st.session_state.questions = translated_questions
-        st.session_state.translated = True
 
 # عرض العنوان
 st.markdown('<h1 class="main-title">🧠 تحدي العقول</h1>', unsafe_allow_html=True)
@@ -396,6 +420,7 @@ with st.sidebar:
     st.markdown("## ⚙️ الإعدادات")
     st.markdown("---")
     
+    # اختيار صعوبة الأسئلة
     difficulty = st.selectbox(
         "🎯 اختر الصعوبة:",
         ['easy', 'medium', 'hard'],
@@ -403,14 +428,20 @@ with st.sidebar:
         index=2
     )
     
+    # اختيار عدد الأسئلة
+    num_questions = st.slider("📚 عدد الأسئلة:", 5, 20, 10)
+    
     if st.button("🚀 بدء لعبة جديدة", use_container_width=True):
         st.session_state.difficulty = difficulty
         with st.spinner("⏳ جاري تحميل الأسئلة..."):
-            if not load_questions():
-                st.warning("⚠️ استخدام الأسئلة الاحتياطية")
+            # محاولة تحميل أسئلة من API
+            if not load_arabic_questions():
+                st.warning("⚠️ استخدام الأسئلة الاحتياطية (مكتبة عربية)")
                 load_fallback_questions()
             else:
-                translate_questions()
+                # تقليل عدد الأسئلة حسب الاختيار
+                if num_questions < len(st.session_state.questions):
+                    st.session_state.questions = random.sample(st.session_state.questions, num_questions)
         st.rerun()
     
     st.markdown("---")
@@ -427,9 +458,9 @@ with st.sidebar:
         st.metric("📝 الإجابات", f"{st.session_state.correct}/{st.session_state.total}")
         
         if st.session_state.use_fallback:
-            st.info("📡 وضع عدم الاتصال")
-        if st.session_state.translated:
-            st.success("🌍 مترجم")
+            st.info("📚 أسئلة عربية")
+        else:
+            st.success("🌐 أسئلة متنوعة")
 
 # المحتوى الرئيسي
 if not st.session_state.questions:
@@ -440,24 +471,22 @@ if not st.session_state.questions:
         <div class="start-box">
             <h2>🎯 اختبر معرفتك!</h2>
             <p style="font-size: 1.1em; margin: 20px 0;">
-                أسئلة ثقافية عامة من جميع المجالات
+                أسئلة ثقافية عامة عربية
             </p>
             <p style="color: #8899bb;">
-                📚 10 أسئلة في كل جولة<br>
+                📚 اختر عدد الأسئلة من القائمة الجانبية<br>
                 ⭐ 10 نقاط لكل إجابة صحيحة<br>
-                🔥 اختر مستوى الصعوبة من القائمة الجانبية<br>
-                🌍 جميع الأسئلة مترجمة إلى العربية
+                🔥 اختر مستوى الصعوبة<br>
+                📖 أسئلة متنوعة في جميع المجالات
             </p>
         </div>
         """, unsafe_allow_html=True)
         
         if st.button("🎮 ابدأ اللعب", use_container_width=True):
             with st.spinner("⏳ جاري تحميل الأسئلة..."):
-                if not load_questions():
+                if not load_arabic_questions():
                     st.warning("⚠️ استخدام الأسئلة الاحتياطية")
                     load_fallback_questions()
-                else:
-                    translate_questions()
             st.rerun()
 
 else:
@@ -578,11 +607,9 @@ else:
         
         if st.button("🔄 لعب مرة أخرى", use_container_width=True):
             with st.spinner("⏳ جاري تحميل الأسئلة..."):
-                if not load_questions():
+                if not load_arabic_questions():
                     load_fallback_questions()
-                else:
-                    translate_questions()
             st.rerun()
 
 st.markdown("---")
-st.caption("🧠 مصدر الأسئلة: Open Trivia DB | 🌍 مترجم للعربية")
+st.caption("📚 مصدر الأسئلة: مكتبة أسئلة عربية | أسئلة لا متناهية")
