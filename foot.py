@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import random
 import html
+from googletrans import Translator
 
 # إعداد الصفحة
 st.set_page_config(
@@ -13,22 +14,18 @@ st.set_page_config(
 # CSS للخلفية السوداء والنصوص البيضاء
 st.markdown("""
 <style>
-    /* خلفية سوداء */
     .stApp {
         background-color: #0a0a0a !important;
     }
     
-    /* كل النصوص بيضاء */
     div, p, h1, h2, h3, h4, h5, h6, span, label, .stMarkdown {
         color: #ffffff !important;
     }
     
-    /* الشريط الجانبي */
     .css-1d391kg, .css-12oz5g7, section[data-testid="stSidebar"] {
         background-color: #1a1a1a !important;
     }
     
-    /* عنوان اللعبة بتدرج أزرق */
     .main-title {
         text-align: center;
         font-size: 2.8em;
@@ -39,7 +36,6 @@ st.markdown("""
         text-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
     }
     
-    /* مربع السؤال */
     .question-box {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
         padding: 30px;
@@ -55,7 +51,6 @@ st.markdown("""
         font-size: 1.3em;
     }
     
-    /* أزرار الخيارات */
     .stButton button {
         background: linear-gradient(135deg, #1a1a2e 0%, #2a2a4a 100%) !important;
         color: #ffffff !important;
@@ -71,7 +66,6 @@ st.markdown("""
     
     .stButton button:hover:not(:disabled) {
         background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%) !important;
-        color: #ffffff !important;
         border-color: #00d2ff !important;
         transform: scale(1.03);
         box-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
@@ -82,20 +76,6 @@ st.markdown("""
         cursor: not-allowed !important;
     }
     
-    /* الإجابات الصحيحة والخاطئة */
-    .correct-answer {
-        background: linear-gradient(135deg, #00b894 0%, #00a36c 100%) !important;
-        border-color: #00b894 !important;
-        color: #ffffff !important;
-    }
-    
-    .wrong-answer {
-        background: linear-gradient(135deg, #e17055 0%, #d63031 100%) !important;
-        border-color: #e17055 !important;
-        color: #ffffff !important;
-    }
-    
-    /* رسائل التغذية الراجعة */
     .stAlert {
         background: #1a1a2e !important;
         border-radius: 12px !important;
@@ -115,7 +95,6 @@ st.markdown("""
         border-left: 5px solid #e17055 !important;
     }
     
-    /* المقاييس */
     .stMetric {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
         padding: 20px !important;
@@ -132,7 +111,6 @@ st.markdown("""
         color: #8899bb !important;
     }
     
-    /* شريط التقدم */
     .stProgress > div > div {
         background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%) !important;
         border-radius: 10px !important;
@@ -143,7 +121,6 @@ st.markdown("""
         border-radius: 10px !important;
     }
     
-    /* مربع الفئة */
     .category-badge {
         background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%) !important;
         color: #ffffff !important;
@@ -155,7 +132,6 @@ st.markdown("""
         box-shadow: 0 0 20px rgba(0, 210, 255, 0.2);
     }
     
-    /* مربع البداية */
     .start-box {
         text-align: center;
         padding: 50px 30px;
@@ -174,12 +150,10 @@ st.markdown("""
         color: #8899bb !important;
     }
     
-    /* التذييل */
     footer, .stCaption {
         color: #445566 !important;
     }
     
-    /* إصلاح ألوان الـ select box */
     .stSelectbox div[data-baseweb="select"] {
         background-color: #1a1a2e !important;
         border-color: #2a2a4a !important;
@@ -190,7 +164,6 @@ st.markdown("""
         color: #ffffff !important;
     }
     
-    /* أزرار الشريط الجانبي */
     section[data-testid="stSidebar"] .stButton button {
         background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%) !important;
         border-color: #00d2ff !important;
@@ -202,12 +175,10 @@ st.markdown("""
         box-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
     }
     
-    /* تخصيص الأزرار في الشريط الجانبي */
     .stSidebar .stMarkdown, .stSidebar div {
         color: #ffffff !important;
     }
     
-    /* رسائل التحذير والمعلومات */
     .stWarning {
         background: #1a1a2e !important;
         border-left: 5px solid #fdcb6e !important;
@@ -218,7 +189,6 @@ st.markdown("""
         border-left: 5px solid #00d2ff !important;
     }
     
-    /* تحسين التمرير */
     ::-webkit-scrollbar {
         width: 8px;
     }
@@ -235,36 +205,63 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ترجمة الأسئلة إلى العربية
+# تهيئة المترجم
+translator = Translator()
+
+def translate_text(text):
+    """ترجمة النص إلى العربية"""
+    try:
+        translation = translator.translate(text, dest='ar')
+        return translation.text
+    except:
+        return text
+
 def translate_question(q_data):
-    categories = {
-        'General Knowledge': 'معرفة عامة',
-        'Science': 'علوم',
-        'History': 'تاريخ',
-        'Geography': 'جغرافيا',
-        'Art': 'فن',
-        'Literature': 'أدب',
-        'Music': 'موسيقى',
-        'Sports': 'رياضة',
-        'Entertainment': 'ترفيه',
-        'Mythology': 'أساطير',
-        'Politics': 'سياسة',
-        'Celebrities': 'مشاهير'
-    }
-    
-    category = q_data.get('category', 'معرفة عامة')
-    for eng, ar in categories.items():
-        if eng in category:
-            category = ar
-            break
-    
-    return {
-        'question': q_data['question'],
-        'options': q_data['options'],
-        'correct': q_data['correct'],
-        'category': category,
-        'correct_answer': q_data['correct_answer']
-    }
+    """ترجمة السؤال بالكامل"""
+    try:
+        # ترجمة السؤال
+        translated_question = translate_text(q_data['question'])
+        
+        # ترجمة الخيارات
+        translated_options = []
+        for option in q_data['options']:
+            translated_options.append(translate_text(option))
+        
+        # ترجمة الإجابة الصحيحة
+        translated_correct = translate_text(q_data['correct_answer'])
+        
+        # ترجمة الفئة
+        categories = {
+            'General Knowledge': 'معرفة عامة',
+            'Science': 'علوم',
+            'History': 'تاريخ',
+            'Geography': 'جغرافيا',
+            'Art': 'فن',
+            'Literature': 'أدب',
+            'Music': 'موسيقى',
+            'Sports': 'رياضة',
+            'Entertainment': 'ترفيه',
+            'Mythology': 'أساطير',
+            'Politics': 'سياسة',
+            'Celebrities': 'مشاهير'
+        }
+        
+        category = q_data.get('category', 'معرفة عامة')
+        for eng, ar in categories.items():
+            if eng in category:
+                category = ar
+                break
+        
+        return {
+            'question': translated_question,
+            'options': translated_options,
+            'correct': translated_options.index(translated_correct) if translated_correct in translated_options else q_data['correct'],
+            'category': category,
+            'correct_answer': translated_correct
+        }
+    except:
+        # في حال فشل الترجمة، استخدم النص الأصلي
+        return q_data
 
 # تهيئة حالة اللعبة
 if 'questions' not in st.session_state:
@@ -279,6 +276,7 @@ if 'questions' not in st.session_state:
     st.session_state.message = ""
     st.session_state.use_fallback = False
     st.session_state.selected = None
+    st.session_state.translated = False
 
 def load_questions():
     try:
@@ -305,7 +303,6 @@ def load_questions():
                         'correct_answer': correct_answer
                     }
                     
-                    q_data = translate_question(q_data)
                     questions.append(q_data)
                 
                 st.session_state.questions = questions
@@ -318,6 +315,7 @@ def load_questions():
                 st.session_state.message = ""
                 st.session_state.use_fallback = False
                 st.session_state.selected = None
+                st.session_state.translated = False
                 return True
                 
     except Exception as e:
@@ -409,6 +407,7 @@ def load_fallback_questions():
     st.session_state.message = ""
     st.session_state.use_fallback = True
     st.session_state.selected = None
+    st.session_state.translated = True
 
 # عرض العنوان
 st.markdown('<h1 class="main-title">🧠 تحدي العقول</h1>', unsafe_allow_html=True)
@@ -431,6 +430,14 @@ with st.sidebar:
             if not load_questions():
                 st.warning("⚠️ استخدام الأسئلة الاحتياطية")
                 load_fallback_questions()
+            else:
+                # ترجمة الأسئلة بعد التحميل
+                with st.spinner("🌍 جاري ترجمة الأسئلة..."):
+                    translated_questions = []
+                    for q in st.session_state.questions:
+                        translated_questions.append(translate_question(q))
+                    st.session_state.questions = translated_questions
+                    st.session_state.translated = True
         st.rerun()
     
     st.markdown("---")
@@ -448,6 +455,8 @@ with st.sidebar:
         
         if st.session_state.use_fallback:
             st.info("📡 وضع عدم الاتصال")
+        if st.session_state.translated:
+            st.success("🌍 مترجم")
 
 # المحتوى الرئيسي
 if not st.session_state.questions:
@@ -463,7 +472,8 @@ if not st.session_state.questions:
             <p style="color: #8899bb;">
                 📚 10 أسئلة في كل جولة<br>
                 ⭐ 10 نقاط لكل إجابة صحيحة<br>
-                🔥 اختر مستوى الصعوبة من القائمة الجانبية
+                🔥 اختر مستوى الصعوبة من القائمة الجانبية<br>
+                🌍 جميع الأسئلة مترجمة إلى العربية
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -473,6 +483,13 @@ if not st.session_state.questions:
                 if not load_questions():
                     st.warning("⚠️ استخدام الأسئلة الاحتياطية")
                     load_fallback_questions()
+                else:
+                    with st.spinner("🌍 جاري ترجمة الأسئلة..."):
+                        translated_questions = []
+                        for q in st.session_state.questions:
+                            translated_questions.append(translate_question(q))
+                        st.session_state.questions = translated_questions
+                        st.session_state.translated = True
             st.rerun()
 
 else:
@@ -498,30 +515,28 @@ else:
         cols = st.columns(2)
         for i, option in enumerate(q['options']):
             with cols[i % 2]:
-                # تحديد نمط الزر بعد الإجابة
                 button_text = option
-                button_class = ""
                 
                 if st.session_state.answered:
                     if i == q['correct']:
                         button_text = "✅ " + option
-                        button_class = "correct-answer"
                     elif st.session_state.selected == i and i != q['correct']:
                         button_text = "❌ " + option
-                        button_class = "wrong-answer"
                 
-                # استخدام HTML لتغيير لون الزر بعد الإجابة
-                if button_class:
+                if st.session_state.answered:
+                    # عرض الزر مع تنسيق
+                    color = '#00b894' if '✅' in button_text else '#e17055' if '❌' in button_text else '#2a2a4a'
                     st.markdown(f"""
                     <div style="
-                        background: {'linear-gradient(135deg, #00b894 0%, #00a36c 100%)' if '✅' in button_text else 'linear-gradient(135deg, #e17055 0%, #d63031 100%)'};
+                        background: {color};
                         padding: 14px;
                         border-radius: 12px;
-                        border: 2px solid {'#00b894' if '✅' in button_text else '#e17055'};
+                        border: 2px solid {color};
                         margin: 5px 0;
                         text-align: center;
                         color: white;
                         font-weight: 500;
+                        opacity: 0.8;
                     ">
                         {button_text}
                     </div>
@@ -598,7 +613,14 @@ else:
             with st.spinner("⏳ جاري تحميل الأسئلة..."):
                 if not load_questions():
                     load_fallback_questions()
+                else:
+                    with st.spinner("🌍 جاري ترجمة الأسئلة..."):
+                        translated_questions = []
+                        for q in st.session_state.questions:
+                            translated_questions.append(translate_question(q))
+                        st.session_state.questions = translated_questions
+                        st.session_state.translated = True
             st.rerun()
 
 st.markdown("---")
-st.caption("🧠 مصدر الأسئلة: Open Trivia DB | أسئلة لا متناهية")
+st.caption("🧠 مصدر الأسئلة: Open Trivia DB | 🌍 مترجم للعربية")
