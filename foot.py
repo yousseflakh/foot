@@ -6,7 +6,7 @@ from datetime import datetime
 
 # إعداد الصفحة
 st.set_page_config(
-    page_title="🧠 تحدي العقول - احترافي",
+    page_title="🧠 تحدي العقول  ",
     page_icon="🧠",
     layout="wide"
 )
@@ -833,7 +833,7 @@ def game_screen():
         total_available = len(ALL_QUESTIONS.get(st.session_state.current_difficulty, []))
         
         st.markdown(f'<div class="question-counter">❓ السؤال رقم {st.session_state.total + 1}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="questions-remaining">📚 الأسئلة المتبقية: {len(available)} من {total_available}</div>', unsafe_allow_html=True)
+       
         
         if st.session_state.reset_message:
             st.info(st.session_state.reset_message)
