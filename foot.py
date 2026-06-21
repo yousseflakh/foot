@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import random
 import html
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 
 # إعداد الصفحة
 st.set_page_config(
@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# CSS للخلفية السوداء والنصوص البيضاء
+# CSS للخلفية السوداء
 st.markdown("""
 <style>
     .stApp {
@@ -206,62 +206,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # تهيئة المترجم
-translator = Translator()
+translator = GoogleTranslator(source='en', target='ar')
 
 def translate_text(text):
     """ترجمة النص إلى العربية"""
     try:
-        translation = translator.translate(text, dest='ar')
-        return translation.text
-    except:
+        if text and len(text) > 0:
+            translated = translator.translate(text)
+            return translated
         return text
-
-def translate_question(q_data):
-    """ترجمة السؤال بالكامل"""
-    try:
-        # ترجمة السؤال
-        translated_question = translate_text(q_data['question'])
-        
-        # ترجمة الخيارات
-        translated_options = []
-        for option in q_data['options']:
-            translated_options.append(translate_text(option))
-        
-        # ترجمة الإجابة الصحيحة
-        translated_correct = translate_text(q_data['correct_answer'])
-        
-        # ترجمة الفئة
-        categories = {
-            'General Knowledge': 'معرفة عامة',
-            'Science': 'علوم',
-            'History': 'تاريخ',
-            'Geography': 'جغرافيا',
-            'Art': 'فن',
-            'Literature': 'أدب',
-            'Music': 'موسيقى',
-            'Sports': 'رياضة',
-            'Entertainment': 'ترفيه',
-            'Mythology': 'أساطير',
-            'Politics': 'سياسة',
-            'Celebrities': 'مشاهير'
-        }
-        
-        category = q_data.get('category', 'معرفة عامة')
-        for eng, ar in categories.items():
-            if eng in category:
-                category = ar
-                break
-        
-        return {
-            'question': translated_question,
-            'options': translated_options,
-            'correct': translated_options.index(translated_correct) if translated_correct in translated_options else q_data['correct'],
-            'category': category,
-            'correct_answer': translated_correct
-        }
-    except:
-        # في حال فشل الترجمة، استخدم النص الأصلي
-        return q_data
+    except Exception as e:
+        return text
 
 # تهيئة حالة اللعبة
 if 'questions' not in st.session_state:
@@ -279,6 +234,7 @@ if 'questions' not in st.session_state:
     st.session_state.translated = False
 
 def load_questions():
+    """جلب الأسئلة من API"""
     try:
         url = f"https://opentdb.com/api.php?amount=10&difficulty={st.session_state.difficulty}&type=multiple"
         response = requests.get(url, timeout=10)
@@ -302,7 +258,6 @@ def load_questions():
                         'category': q['category'],
                         'correct_answer': correct_answer
                     }
-                    
                     questions.append(q_data)
                 
                 st.session_state.questions = questions
@@ -324,6 +279,7 @@ def load_questions():
     return False
 
 def load_fallback_questions():
+    """أسئلة احتياطية بالعربية"""
     questions = [
         {
             'question': 'ما هو أطول نهر في العالم؟',
@@ -409,6 +365,29 @@ def load_fallback_questions():
     st.session_state.selected = None
     st.session_state.translated = True
 
+def translate_questions():
+    """ترجمة جميع الأسئلة"""
+    if not st.session_state.questions or st.session_state.translated:
+        return
+    
+    with st.spinner("🌍 جاري ترجمة الأسئلة..."):
+        translated_questions = []
+        for q in st.session_state.questions:
+            try:
+                translated_q = {
+                    'question': translate_text(q['question']),
+                    'options': [translate_text(opt) for opt in q['options']],
+                    'correct': q['correct'],
+                    'category': translate_text(q['category']),
+                    'correct_answer': translate_text(q['correct_answer'])
+                }
+                translated_questions.append(translated_q)
+            except:
+                translated_questions.append(q)
+        
+        st.session_state.questions = translated_questions
+        st.session_state.translated = True
+
 # عرض العنوان
 st.markdown('<h1 class="main-title">🧠 تحدي العقول</h1>', unsafe_allow_html=True)
 
@@ -431,13 +410,7 @@ with st.sidebar:
                 st.warning("⚠️ استخدام الأسئلة الاحتياطية")
                 load_fallback_questions()
             else:
-                # ترجمة الأسئلة بعد التحميل
-                with st.spinner("🌍 جاري ترجمة الأسئلة..."):
-                    translated_questions = []
-                    for q in st.session_state.questions:
-                        translated_questions.append(translate_question(q))
-                    st.session_state.questions = translated_questions
-                    st.session_state.translated = True
+                translate_questions()
         st.rerun()
     
     st.markdown("---")
@@ -484,12 +457,7 @@ if not st.session_state.questions:
                     st.warning("⚠️ استخدام الأسئلة الاحتياطية")
                     load_fallback_questions()
                 else:
-                    with st.spinner("🌍 جاري ترجمة الأسئلة..."):
-                        translated_questions = []
-                        for q in st.session_state.questions:
-                            translated_questions.append(translate_question(q))
-                        st.session_state.questions = translated_questions
-                        st.session_state.translated = True
+                    translate_questions()
             st.rerun()
 
 else:
@@ -524,7 +492,6 @@ else:
                         button_text = "❌ " + option
                 
                 if st.session_state.answered:
-                    # عرض الزر مع تنسيق
                     color = '#00b894' if '✅' in button_text else '#e17055' if '❌' in button_text else '#2a2a4a'
                     st.markdown(f"""
                     <div style="
@@ -614,12 +581,7 @@ else:
                 if not load_questions():
                     load_fallback_questions()
                 else:
-                    with st.spinner("🌍 جاري ترجمة الأسئلة..."):
-                        translated_questions = []
-                        for q in st.session_state.questions:
-                            translated_questions.append(translate_question(q))
-                        st.session_state.questions = translated_questions
-                        st.session_state.translated = True
+                    translate_questions()
             st.rerun()
 
 st.markdown("---")
