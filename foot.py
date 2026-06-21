@@ -1,5 +1,7 @@
 import streamlit as st
 import random
+import requests
+import re
 
 # إعداد الصفحة
 st.set_page_config(
@@ -202,8 +204,105 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ==================== مكتبة الأسئلة العربية ====================
-ARABIC_QUESTIONS = [
+# ==================== جلب الأسئلة من ويكيبيديا ====================
+def fetch_wikipedia_articles():
+    """جلب مقالات عشوائية من ويكيبيديا العربية"""
+    try:
+        # جلب قائمة بالمقالات العشوائية
+        url = "https://ar.wikipedia.org/w/api.php"
+        params = {
+            'action': 'query',
+            'format': 'json',
+            'list': 'random',
+            'rnnamespace': 0,
+            'rnlimit': 20
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            articles = data.get('query', {}).get('random', [])
+            
+            questions = []
+            categories = ['تاريخ', 'علوم', 'جغرافيا', 'ثقافة', 'أدب']
+            
+            for article in articles:
+                title = article.get('title', '')
+                if len(title) > 5:  # تجاهل العناوين القصيرة
+                    # إنشاء سؤال من عنوان المقال
+                    correct_answer = title
+                    
+                    # جلب 3 خيارات خاطئة من مقالات أخرى
+                    wrong_options = []
+                    other_articles = [a.get('title', '') for a in articles if a.get('title') != title]
+                    if len(other_articles) >= 3:
+                        wrong_options = random.sample(other_articles, 3)
+                    else:
+                        # خيارات احتياطية
+                        fallback = ['القاهرة', 'باريس', 'لندن', 'طوكيو', 'القمر', 'المريخ']
+                        wrong_options = random.sample(fallback, 3)
+                    
+                    options = [correct_answer] + wrong_options
+                    random.shuffle(options)
+                    
+                    questions.append({
+                        'question': f'ما هو/ما هي "{title}"؟ (مقالة من ويكيبيديا)',
+                        'options': options,
+                        'correct': options.index(correct_answer),
+                        'category': random.choice(categories),
+                        'correct_answer': correct_answer
+                    })
+            
+            return questions
+    except Exception as e:
+        st.error(f"⚠️ خطأ في جلب المقالات: {str(e)}")
+    
+    return None
+
+def load_fallback_questions():
+    """أسئلة احتياطية"""
+    fallback = [
+        {
+            'question': 'ما هي عاصمة مصر؟',
+            'options': ['الإسكندرية', 'القاهرة', 'الجيزة', 'الأقصر'],
+            'correct': 1,
+            'category': 'جغرافيا',
+            'correct_answer': 'القاهرة'
+        },
+        {
+            'question': 'من هو مخترع المصباح الكهربائي؟',
+            'options': ['توماس أديسون', 'نيكولا تسلا', 'ألبرت أينشتاين', 'غراهام بيل'],
+            'correct': 0,
+            'category': 'علوم',
+            'correct_answer': 'توماس أديسون'
+        },
+        {
+            'question': 'كم عدد الكواكب في المجموعة الشمسية؟',
+            'options': ['7', '8', '9', '10'],
+            'correct': 1,
+            'category': 'علوم',
+            'correct_answer': '8'
+        },
+        {
+            'question': 'ما هو أطول نهر في العالم؟',
+            'options': ['نهر الأمازون', 'نهر النيل', 'نهر المسيسيبي', 'نهر اليانغتسي'],
+            'correct': 1,
+            'category': 'جغرافيا',
+            'correct_answer': 'نهر النيل'
+        },
+        {
+            'question': 'من هو مؤسس الدولة العثمانية؟',
+            'options': ['عثمان الأول', 'أورخان الأول', 'مراد الأول', 'بايزيد الأول'],
+            'correct': 0,
+            'category': 'تاريخ',
+            'correct_answer': 'عثمان الأول'
+        }
+    ]
+    return fallback
+
+# ==================== مكتبة الأسئلة المحلية ====================
+LOCAL_QUESTIONS = [
     # تاريخ
     {
         'question': 'في أي عام سقطت الخلافة العثمانية؟',
@@ -220,28 +319,12 @@ ARABIC_QUESTIONS = [
         'correct_answer': 'عثمان الأول'
     },
     {
-        'question': 'في أي عام وقعت معركة حطين؟',
-        'options': ['1187', '1189', '1191', '1185'],
-        'correct': 0,
-        'category': 'تاريخ',
-        'correct_answer': '1187'
-    },
-    {
-        'question': 'من هو القائد المسلم الذي فتح الأندلس؟',
-        'options': ['طارق بن زياد', 'موسى بن نصير', 'عبد الرحمن الداخل', 'محمد الفاتح'],
-        'correct': 0,
-        'category': 'تاريخ',
-        'correct_answer': 'طارق بن زياد'
-    },
-    {
         'question': 'في أي عام هبط الإنسان على سطح القمر؟',
         'options': ['1965', '1969', '1971', '1973'],
         'correct': 1,
         'category': 'تاريخ',
         'correct_answer': '1969'
     },
-    
-    # جغرافيا
     {
         'question': 'ما هو أطول نهر في العالم؟',
         'options': ['نهر الأمازون', 'نهر النيل', 'نهر المسيسيبي', 'نهر اليانغتسي'],
@@ -256,29 +339,6 @@ ARABIC_QUESTIONS = [
         'category': 'جغرافيا',
         'correct_answer': 'طوكيو'
     },
-    {
-        'question': 'ما هي عاصمة مصر؟',
-        'options': ['الإسكندرية', 'القاهرة', 'الجيزة', 'الأقصر'],
-        'correct': 1,
-        'category': 'جغرافيا',
-        'correct_answer': 'القاهرة'
-    },
-    {
-        'question': 'ما هو أكبر محيط في العالم؟',
-        'options': ['المحيط الأطلسي', 'المحيط الهندي', 'المحيط الهادئ', 'المحيط المتجمد'],
-        'correct': 2,
-        'category': 'جغرافيا',
-        'correct_answer': 'المحيط الهادئ'
-    },
-    {
-        'question': 'ما هي أصغر دولة في العالم من حيث المساحة؟',
-        'options': ['الفاتيكان', 'موناكو', 'ناورو', 'سان مارينو'],
-        'correct': 0,
-        'category': 'جغرافيا',
-        'correct_answer': 'الفاتيكان'
-    },
-    
-    # علوم
     {
         'question': 'من هو مخترع المصباح الكهربائي؟',
         'options': ['توماس أديسون', 'نيكولا تسلا', 'ألبرت أينشتاين', 'غراهام بيل'],
@@ -301,22 +361,6 @@ ARABIC_QUESTIONS = [
         'correct_answer': 'الفهد'
     },
     {
-        'question': 'ما هي أقرب كوكب إلى الشمس؟',
-        'options': ['الزهرة', 'عطارد', 'الأرض', 'المريخ'],
-        'correct': 1,
-        'category': 'علوم',
-        'correct_answer': 'عطارد'
-    },
-    {
-        'question': 'من هو مكتشف الجاذبية؟',
-        'options': ['أينشتاين', 'نيوتن', 'جاليليو', 'كوبرنيكوس'],
-        'correct': 1,
-        'category': 'علوم',
-        'correct_answer': 'نيوتن'
-    },
-    
-    # أدب
-    {
         'question': 'من هو مؤلف رواية "الجريمة والعقاب"؟',
         'options': ['فيودور دوستويفسكي', 'ليو تولستوي', 'أنطون تشيخوف', 'نيكولاي غوغول'],
         'correct': 0,
@@ -329,73 +373,6 @@ ARABIC_QUESTIONS = [
         'correct': 0,
         'category': 'أدب',
         'correct_answer': 'امرؤ القيس'
-    },
-    {
-        'question': 'من هو مؤلف كتاب "الأيام"؟',
-        'options': ['طه حسين', 'نجيب محفوظ', 'عباس العقاد', 'توفيق الحكيم'],
-        'correct': 0,
-        'category': 'أدب',
-        'correct_answer': 'طه حسين'
-    },
-    
-    # دين
-    {
-        'question': 'من هو النبي الذي أنزل عليه الزبور؟',
-        'options': ['موسى', 'داود', 'سليمان', 'إبراهيم'],
-        'correct': 1,
-        'category': 'دين',
-        'correct_answer': 'داود'
-    },
-    {
-        'question': 'كم عدد سور القرآن الكريم؟',
-        'options': ['113', '114', '115', '116'],
-        'correct': 1,
-        'category': 'دين',
-        'correct_answer': '114'
-    },
-    {
-        'question': 'ما هي أول صلاة فرضت على المسلمين؟',
-        'options': ['الفجر', 'الظهر', 'العصر', 'المغرب'],
-        'correct': 0,
-        'category': 'دين',
-        'correct_answer': 'الفجر'
-    },
-    
-    # ثقافة عامة
-    {
-        'question': 'ما هي اللغة الأكثر تحدثاً في العالم كلغة أم؟',
-        'options': ['الإنجليزية', 'الإسبانية', 'الصينية الماندرين', 'الهندية'],
-        'correct': 2,
-        'category': 'ثقافة',
-        'correct_answer': 'الصينية الماندرين'
-    },
-    {
-        'question': 'من هو مؤسس علم الجبر؟',
-        'options': ['الخوارزمي', 'ابن سينا', 'الفارابي', 'البيروني'],
-        'correct': 0,
-        'category': 'ثقافة',
-        'correct_answer': 'الخوارزمي'
-    },
-    {
-        'question': 'ما هي عملة المملكة العربية السعودية؟',
-        'options': ['دينار', 'درهم', 'ريال', 'دولار'],
-        'correct': 2,
-        'category': 'اقتصاد',
-        'correct_answer': 'ريال'
-    },
-    {
-        'question': 'ما هي عاصمة العراق؟',
-        'options': ['بغداد', 'البصرة', 'الموصل', 'أربيل'],
-        'correct': 0,
-        'category': 'جغرافيا',
-        'correct_answer': 'بغداد'
-    },
-    {
-        'question': 'من هو مؤسس علم الاجتماع؟',
-        'options': ['ابن خلدون', 'دوركايم', 'ماركس', 'فيبر'],
-        'correct': 0,
-        'category': 'ثقافة',
-        'correct_answer': 'ابن خلدون'
     }
 ]
 
@@ -410,16 +387,34 @@ if 'questions' not in st.session_state:
     st.session_state.game_over = False
     st.session_state.message = ""
     st.session_state.selected = None
+    st.session_state.source = 'local'
 
-def load_arabic_questions(num=10):
-    """تحميل أسئلة عربية"""
-    if len(ARABIC_QUESTIONS) >= num:
-        questions = random.sample(ARABIC_QUESTIONS, num)
+def load_questions_from_wikipedia(num=10):
+    """تحميل أسئلة من ويكيبيديا"""
+    with st.spinner("🌐 جاري جلب الأسئلة من ويكيبيديا..."):
+        questions = fetch_wikipedia_articles()
+        
+        if questions and len(questions) >= num:
+            selected = random.sample(questions, min(num, len(questions)))
+            st.session_state.questions = selected
+            st.session_state.source = 'wikipedia'
+            return True
+        else:
+            st.warning("⚠️ استخدام الأسئلة المحلية")
+            return False
+
+def load_local_questions(num=10):
+    """تحميل أسئلة محلية"""
+    if len(LOCAL_QUESTIONS) >= num:
+        questions = random.sample(LOCAL_QUESTIONS, num)
     else:
-        questions = ARABIC_QUESTIONS.copy()
+        questions = LOCAL_QUESTIONS.copy()
         random.shuffle(questions)
     
     st.session_state.questions = questions
+    st.session_state.source = 'local'
+    
+    # إعادة تعيين الحالة
     st.session_state.current_q = 0
     st.session_state.score = 0
     st.session_state.total = 0
@@ -437,12 +432,23 @@ with st.sidebar:
     st.markdown("## ⚙️ الإعدادات")
     st.markdown("---")
     
+    # اختيار مصدر الأسئلة
+    source = st.selectbox(
+        "📚 مصدر الأسئلة:",
+        ['محلي', 'ويكيبيديا (إنترنت)'],
+        format_func=lambda x: x
+    )
+    
     # اختيار عدد الأسئلة
-    num_questions = st.slider("📚 عدد الأسئلة:", 5, 20, 10)
+    num_questions = st.slider("📚 عدد الأسئلة:", 3, 15, 10)
     
     if st.button("🚀 بدء لعبة جديدة", use_container_width=True):
-        with st.spinner("⏳ جاري تحميل الأسئلة..."):
-            load_arabic_questions(num_questions)
+        if source == 'ويكيبيديا (إنترنت)':
+            if not load_questions_from_wikipedia(num_questions):
+                load_local_questions(num_questions)
+                st.session_state.source = 'local (احتياطي)'
+        else:
+            load_local_questions(num_questions)
         st.rerun()
     
     st.markdown("---")
@@ -457,7 +463,13 @@ with st.sidebar:
             st.metric("✅ النجاح", f"{pct:.0f}%")
         
         st.metric("📝 الإجابات", f"{st.session_state.correct}/{st.session_state.total}")
-        st.info("📚 أسئلة عربية 100%")
+        
+        if st.session_state.source == 'wikipedia':
+            st.success("🌐 ويكيبيديا")
+        elif st.session_state.source == 'local':
+            st.info("📚 محلي")
+        else:
+            st.warning(f"📚 {st.session_state.source}")
 
 # المحتوى الرئيسي
 if not st.session_state.questions:
@@ -468,21 +480,26 @@ if not st.session_state.questions:
         <div class="start-box">
             <h2>🎯 اختبر معرفتك!</h2>
             <p style="font-size: 1.1em; margin: 20px 0;">
-                أسئلة ثقافية عامة عربية 100%
+                أسئلة ثقافية عامة بالعربية
             </p>
             <p style="color: #8899bb;">
-                📚 اختر عدد الأسئلة من القائمة الجانبية<br>
-                ⭐ 10 نقاط لكل إجابة صحيحة<br>
-                📖 أكثر من 25 سؤال في مجالات متنوعة<br>
-                🇸🇦 جميع الأسئلة باللغة العربية
+                📚 اختر مصدر الأسئلة من القائمة الجانبية<br>
+                🌐 ويكيبيديا: أسئلة من مقالات عربية<br>
+                📖 محلي: أسئلة مكتوبة مسبقاً<br>
+                ⭐ 10 نقاط لكل إجابة صحيحة
             </p>
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("🎮 ابدأ اللعب", use_container_width=True):
-            with st.spinner("⏳ جاري تحميل الأسئلة..."):
-                load_arabic_questions(10)
-            st.rerun()
+        col1, col2, col3 = st.columns(3)
+        with col2:
+            if st.button("🎮 ابدأ اللعب", use_container_width=True):
+                if source == 'ويكيبيديا (إنترنت)':
+                    if not load_questions_from_wikipedia(num_questions):
+                        load_local_questions(num_questions)
+                else:
+                    load_local_questions(num_questions)
+                st.rerun()
 
 else:
     # عرض الأسئلة
@@ -601,9 +618,12 @@ else:
             st.warning("💪 **لا تستسلم! الممارسة تصنع الإتقان!**")
         
         if st.button("🔄 لعب مرة أخرى", use_container_width=True):
-            with st.spinner("⏳ جاري تحميل الأسئلة..."):
-                load_arabic_questions(num_questions)
+            if source == 'ويكيبيديا (إنترنت)':
+                if not load_questions_from_wikipedia(num_questions):
+                    load_local_questions(num_questions)
+            else:
+                load_local_questions(num_questions)
             st.rerun()
 
 st.markdown("---")
-st.caption("📚 أسئلة عربية 100% | 🇸🇦 جميع الأسئلة باللغة العربية | لا حاجة للإنترنت")
+st.caption("📚 أسئلة عربية | 🌐 ويكيبيديا + 📖 محلي | نسخة 2.0")
