@@ -655,7 +655,7 @@ def display_leaderboard(limit=10):
 
 # ==================== شاشة تسجيل الدخول ====================
 def login_screen():
-    st.markdown('<h1 class="main-title">🧠 تحدي العقول - احترافي</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-title">🧠 تحدي العقول </h1>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -663,12 +663,10 @@ def login_screen():
         <div class="start-box">
             <h2>👋 مرحباً بك!</h2>
             <p style="font-size: 1.1em; margin: 20px 0;">
-                اختبار ثقافي عميق مع <strong>{TOTAL_QUESTIONS}</strong> سؤال
+                اختبار ثقافي عميق  
             </p>
             <p style="color: #8899bb;">
                 📚 أسئلة متنوعة وعميقة<br>
-                🎲 ترتيب عشوائي للإجابات<br>
-                🚫 منع تكرار الأسئلة<br>
                 🏆 سجل نتيجتك في لوحة المتصدرين
             </p>
         </div>
@@ -680,7 +678,7 @@ def login_screen():
             "🎯 اختر مستوى الصعوبة:",
             ['سهل', 'متوسط', 'صعب', 'صعب جداً'],
             index=2,
-            format_func=lambda x: f"{'🟢' if x=='سهل' else '🟡' if x=='متوسط' else '🟠' if x=='صعب' else '🔴'} {x} ({len(ALL_QUESTIONS[x])} سؤال)"
+            format_func=lambda x: f"{'🟢' if x=='سهل' else '🟡' if x=='متوسط' else '🟠' if x=='صعب' else '🔴'}
         )
         
         col1, col2, col3 = st.columns([1, 2, 1])
