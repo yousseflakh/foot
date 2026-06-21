@@ -758,8 +758,7 @@ def game_screen():
             st.metric("📝 الإجابات", f"{st.session_state.correct}/{st.session_state.total}")
             st.metric("❓ الأسئلة", f"{st.session_state.total}")
             
-            available = get_available_questions(st.session_state.current_difficulty)
-            total_available = len(ALL_QUESTIONS.get(st.session_state.current_difficulty, []))
+            
             
             rank = get_player_rank(st.session_state.player_name)
             if rank:
