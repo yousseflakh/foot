@@ -257,6 +257,12 @@ st.markdown("""
         color: #8899bb;
         margin: 10px 0;
     }
+    .questions-remaining {
+        text-align: center;
+        color: #667eea;
+        font-size: 0.9em;
+        margin-bottom: 15px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -321,6 +327,8 @@ def get_all_questions():
             {'question': 'ما هي عاصمة الأردن؟', 'options': ['عمان', 'الزرقاء', 'إربد', 'العقبة'], 'correct': 0, 'category': 'جغرافيا'},
             {'question': 'ما هو أكبر محيط في العالم؟', 'options': ['الأطلسي', 'الهادئ', 'الهندي', 'المتجمد'], 'correct': 1, 'category': 'جغرافيا'},
             {'question': 'من هو أول الخلفاء الراشدين؟', 'options': ['عمر', 'أبو بكر', 'عثمان', 'علي'], 'correct': 1, 'category': 'تاريخ'},
+            {'question': 'ما هي عاصمة الإمارات؟', 'options': ['دبي', 'أبو ظبي', 'الشارقة', 'عجمان'], 'correct': 1, 'category': 'جغرافيا'},
+            {'question': 'كم عدد أيام الأسبوع؟', 'options': ['5', '6', '7', '8'], 'correct': 2, 'category': 'عام'},
         ],
         'متوسط': [
             {'question': 'في أي عام هبط الإنسان على سطح القمر؟', 'options': ['1965', '1969', '1971', '1973'], 'correct': 1, 'category': 'تاريخ'},
@@ -332,6 +340,7 @@ def get_all_questions():
             {'question': 'من هو مؤلف رواية "البؤساء"؟', 'options': ['فيكتور هوغو', 'ألكسندر دوماس', 'جول فيرن', 'إميل زولا'], 'correct': 0, 'category': 'أدب'},
             {'question': 'ما هي عاصمة البرازيل؟', 'options': ['ريو', 'ساو باولو', 'برازيليا', 'بيلو هوريزونتي'], 'correct': 2, 'category': 'جغرافيا'},
             {'question': 'من هو مؤسس علم النفس الحديث؟', 'options': ['سيغموند فرويد', 'كارل يونغ', 'ويليام جيمس', 'إيفان بافلوف'], 'correct': 0, 'category': 'علوم'},
+            {'question': 'ما هي عاصمة ألمانيا؟', 'options': ['ميونخ', 'برلين', 'هامبورغ', 'كولونيا'], 'correct': 1, 'category': 'جغرافيا'},
         ],
         'صعب': [
             {'question': 'في أي عام تم سقوط الأندلس نهائياً؟', 'options': ['1492', '1493', '1494', '1495'], 'correct': 0, 'category': 'تاريخ'},
@@ -342,6 +351,7 @@ def get_all_questions():
             {'question': 'ما هي عاصمة الخلافة العباسية؟', 'options': ['دمشق', 'بغداد', 'القاهرة', 'قرطبة'], 'correct': 1, 'category': 'تاريخ'},
             {'question': 'من هو مؤسس علم النحو؟', 'options': ['أبو الأسود الدؤلي', 'سيبويه', 'الخليل بن أحمد', 'الأصمعي'], 'correct': 0, 'category': 'ثقافة'},
             {'question': 'ما هي أقدم جامعة في العالم؟', 'options': ['الأزهر', 'القرويين', 'بولونيا', 'أكسفورد'], 'correct': 1, 'category': 'تاريخ'},
+            {'question': 'من هو مخترع التلغراف؟', 'options': ['صموئيل مورس', 'ألكسندر بيل', 'توماس أديسون', 'نيكولا تسلا'], 'correct': 0, 'category': 'علوم'},
         ],
         'صعب جداً': [
             {'question': 'في أي عام وقعت معركة عين جالوت؟', 'options': ['1260', '1261', '1262', '1263'], 'correct': 0, 'category': 'تاريخ'},
@@ -355,19 +365,40 @@ def get_all_questions():
             {'question': 'من هو مؤسس علم المنطق في الحضارة العربية؟', 'options': ['الكندي', 'الفارابي', 'ابن سينا', 'الغزالي'], 'correct': 1, 'category': 'فلسفة'},
             {'question': 'ما هي أقدم مدينة في العالم؟', 'options': ['دمشق', 'أريحا', 'بغداد', 'القاهرة'], 'correct': 1, 'category': 'تاريخ'},
             {'question': 'من هو أول من استخدم الخريطة؟', 'options': ['البيروني', 'الخوارزمي', 'الإدريسي', 'ابن بطوطة'], 'correct': 2, 'category': 'جغرافيا'},
+            {'question': 'ما هو اسم أول طائرة في التاريخ؟', 'options': ['الطائرة الورقية', 'طائرة الأخوين رايت', 'طائرة ليوناردو', 'المنطاد'], 'correct': 1, 'category': 'علوم'},
         ]
     }
 
 ALL_QUESTIONS = get_all_questions()
 
+def get_available_questions(difficulty):
+    """الحصول على قائمة الأسئلة المتاحة (غير المستخدمة)"""
+    all_q = ALL_QUESTIONS.get(difficulty, [])
+    used_questions = st.session_state.used_questions.get(difficulty, [])
+    
+    # إرجاع الأسئلة غير المستخدمة
+    available = [q for q in all_q if q['question'] not in used_questions]
+    return available
+
 def get_random_question(difficulty):
-    """جلب سؤال عشوائي مع ترتيب عشوائي للخيارات"""
-    questions = ALL_QUESTIONS.get(difficulty, [])
-    if not questions:
-        questions = ALL_QUESTIONS.get('صعب', [])
+    """جلب سؤال عشوائي مع ترتيب عشوائي للخيارات - مع منع التكرار"""
+    available = get_available_questions(difficulty)
+    
+    # إذا نفذت الأسئلة، قم بإعادة ضبط القائمة المستخدمة
+    if not available:
+        st.session_state.used_questions[difficulty] = []
+        available = get_available_questions(difficulty)
+        st.warning("🔄 تم إعادة ضبط الأسئلة! لقد أجبت على جميع الأسئلة المتاحة.")
+    
+    if not available:
+        # في حالة عدم وجود أسئلة (حالة نادرة)
+        return None
     
     # اختيار سؤال عشوائي
-    q = random.choice(questions).copy()
+    q = random.choice(available).copy()
+    
+    # إضافة السؤال إلى القائمة المستخدمة
+    st.session_state.used_questions[difficulty].append(q['question'])
     
     # ترتيب الخيارات عشوائياً مع تتبع الإجابة الصحيحة
     correct_answer = q['options'][q['correct']]
@@ -406,10 +437,27 @@ if 'score_saved' not in st.session_state:
     st.session_state.score_saved = False
 if 'current_question' not in st.session_state:
     st.session_state.current_question = None
+if 'used_questions' not in st.session_state:
+    st.session_state.used_questions = {
+        'سهل': [],
+        'متوسط': [],
+        'صعب': [],
+        'صعب جداً': []
+    }
+if 'questions_reset' not in st.session_state:
+    st.session_state.questions_reset = False
 
 def load_new_question():
-    """تحميل سؤال جديد عشوائي"""
-    st.session_state.current_question = get_random_question(st.session_state.current_difficulty)
+    """تحميل سؤال جديد عشوائي - مع منع التكرار"""
+    q = get_random_question(st.session_state.current_difficulty)
+    
+    if q is None:
+        # في حالة عدم وجود أسئلة
+        st.session_state.current_question = None
+        st.session_state.game_over = True
+        return
+    
+    st.session_state.current_question = q
     st.session_state.answered = False
     st.session_state.selected = None
     st.session_state.message = ""
@@ -440,6 +488,24 @@ def reset_game():
     st.session_state.message = ""
     st.session_state.selected = None
     st.session_state.score_saved = False
+    st.session_state.used_questions = {
+        'سهل': [],
+        'متوسط': [],
+        'صعب': [],
+        'صعب جداً': []
+    }
+    st.session_state.questions_reset = False
+    load_new_question()
+
+def reset_questions():
+    """إعادة ضبط الأسئلة المستخدمة فقط"""
+    st.session_state.used_questions = {
+        'سهل': [],
+        'متوسط': [],
+        'صعب': [],
+        'صعب جداً': []
+    }
+    st.session_state.questions_reset = True
     load_new_question()
 
 # ==================== عرض لوحة المتصدرين ====================
@@ -487,6 +553,7 @@ def login_screen():
             <p style="color: #8899bb;">
                 📚 أسئلة غير محدودة<br>
                 🎲 ترتيب عشوائي للإجابات<br>
+                🚫 منع تكرار الأسئلة<br>
                 🏆 سجل نتيجتك في لوحة المتصدرين
             </p>
         </div>
@@ -565,6 +632,13 @@ def game_screen():
         
         st.markdown("---")
         
+        # زر إعادة ضبط الأسئلة
+        if st.button("🔄 إعادة ضبط الأسئلة", use_container_width=True):
+            reset_questions()
+            st.rerun()
+        
+        st.markdown("---")
+        
         if st.session_state.total > 0 and not st.session_state.game_ended:
             if st.button("🏁 إنهاء التحدي", use_container_width=True):
                 end_game()
@@ -583,6 +657,10 @@ def game_screen():
             
             st.metric("📝 الإجابات", f"{st.session_state.correct}/{st.session_state.total}")
             st.metric("❓ الأسئلة", f"{st.session_state.total}")
+            
+            # عرض عدد الأسئلة المتبقية
+            available = get_available_questions(st.session_state.current_difficulty)
+            st.metric("📚 متبقي", f"{len(available)} سؤال")
             
             rank = get_player_rank(st.session_state.player_name)
             if rank:
@@ -646,11 +724,16 @@ def game_screen():
         # عرض السؤال الحالي
         if st.session_state.current_question is None:
             load_new_question()
+            if st.session_state.current_question is None:
+                st.error("❌ لا توجد أسئلة متاحة!")
+                return
         
         q = st.session_state.current_question
         
-        # عداد الأسئلة
+        # عداد الأسئلة وعدد الأسئلة المتبقية
+        available = get_available_questions(st.session_state.current_difficulty)
         st.markdown(f'<div class="question-counter">❓ السؤال رقم {st.session_state.total + 1}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="questions-remaining">📚 الأسئلة المتبقية: {len(available)}</div>', unsafe_allow_html=True)
         
         # الفئة والصعوبة
         col1, col2 = st.columns([2, 1])
