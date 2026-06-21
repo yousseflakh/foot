@@ -10,128 +10,233 @@ st.set_page_config(
     layout="wide"
 )
 
-# CSS مخصص لإصلاح مشاكل العرض
+# CSS للخلفية السوداء والنصوص البيضاء
 st.markdown("""
 <style>
-    /* إصلاح النص الأبيض */
+    /* خلفية سوداء */
     .stApp {
-        background-color: #f0f2f6;
+        background-color: #0a0a0a !important;
     }
     
+    /* كل النصوص بيضاء */
+    div, p, h1, h2, h3, h4, h5, h6, span, label, .stMarkdown {
+        color: #ffffff !important;
+    }
+    
+    /* الشريط الجانبي */
+    .css-1d391kg, .css-12oz5g7, section[data-testid="stSidebar"] {
+        background-color: #1a1a1a !important;
+    }
+    
+    /* عنوان اللعبة بتدرج أزرق */
     .main-title {
         text-align: center;
-        font-size: 2.5em;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-size: 2.8em;
+        background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        padding: 10px;
-        color: #000 !important;
+        padding: 15px;
+        text-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
     }
     
+    /* مربع السؤال */
     .question-box {
-        background: #ffffff !important;
-        padding: 25px;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
+        padding: 30px;
         border-radius: 15px;
-        border-left: 5px solid #667eea;
+        border-left: 5px solid #00d2ff;
         margin: 20px 0;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        border: 1px solid #2a2a4a;
     }
     
     .question-box h3 {
-        color: #1a1a2e !important;
+        color: #ffffff !important;
+        font-size: 1.3em;
     }
     
-    /* إصلاح ألوان النصوص */
-    div, p, h1, h2, h3, h4, h5, h6, span, label {
-        color: #1a1a2e !important;
-    }
-    
-    /* إصلاح أزرار الخيارات */
+    /* أزرار الخيارات */
     .stButton button {
-        background: white !important;
-        color: #1a1a2e !important;
-        border: 2px solid #e0e0e0 !important;
-        border-radius: 10px !important;
-        padding: 12px !important;
+        background: linear-gradient(135deg, #1a1a2e 0%, #2a2a4a 100%) !important;
+        color: #ffffff !important;
+        border: 2px solid #3a3a5a !important;
+        border-radius: 12px !important;
+        padding: 14px !important;
         width: 100% !important;
-        transition: all 0.3s !important;
+        transition: all 0.3s ease !important;
         font-size: 16px !important;
+        font-weight: 500 !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     }
     
     .stButton button:hover:not(:disabled) {
-        background: #667eea !important;
-        color: white !important;
-        border-color: #667eea !important;
-        transform: scale(1.02);
+        background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%) !important;
+        color: #ffffff !important;
+        border-color: #00d2ff !important;
+        transform: scale(1.03);
+        box-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
     }
     
     .stButton button:disabled {
-        opacity: 0.7 !important;
+        opacity: 0.6 !important;
         cursor: not-allowed !important;
     }
     
-    /* ألوان الإجابات */
+    /* الإجابات الصحيحة والخاطئة */
     .correct-answer {
-        background: #d4edda !important;
-        border-color: #28a745 !important;
-        color: #155724 !important;
+        background: linear-gradient(135deg, #00b894 0%, #00a36c 100%) !important;
+        border-color: #00b894 !important;
+        color: #ffffff !important;
     }
     
     .wrong-answer {
-        background: #f8d7da !important;
-        border-color: #dc3545 !important;
-        color: #721c24 !important;
+        background: linear-gradient(135deg, #e17055 0%, #d63031 100%) !important;
+        border-color: #e17055 !important;
+        color: #ffffff !important;
     }
     
-    /* إصلاح الشريط الجانبي */
-    .css-1d391kg, .css-12oz5g7 {
-        background-color: #ffffff !important;
-    }
-    
-    /* إصلاح رسائل النجاح والخطأ */
+    /* رسائل التغذية الراجعة */
     .stAlert {
-        background-color: #ffffff !important;
-        border-radius: 10px !important;
+        background: #1a1a2e !important;
+        border-radius: 12px !important;
         padding: 15px !important;
+        border: 1px solid #2a2a4a !important;
     }
     
     .stAlert div {
-        color: #1a1a2e !important;
+        color: #ffffff !important;
     }
     
-    /* إصلاح المقاييس */
+    .stSuccess {
+        border-left: 5px solid #00b894 !important;
+    }
+    
+    .stError {
+        border-left: 5px solid #e17055 !important;
+    }
+    
+    /* المقاييس */
     .stMetric {
-        background: white !important;
-        padding: 15px !important;
-        border-radius: 10px !important;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
+        padding: 20px !important;
+        border-radius: 12px !important;
+        border: 1px solid #2a2a4a !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     }
     
     .stMetric div {
-        color: #1a1a2e !important;
+        color: #ffffff !important;
     }
     
-    /* إصلاح شريط التقدم */
+    .stMetric label {
+        color: #8899bb !important;
+    }
+    
+    /* شريط التقدم */
     .stProgress > div > div {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%) !important;
+        border-radius: 10px !important;
     }
     
-    /* إصلاح مربع الفئة */
+    .stProgress > div {
+        background: #1a1a2e !important;
+        border-radius: 10px !important;
+    }
+    
+    /* مربع الفئة */
     .category-badge {
-        background: #667eea !important;
-        color: white !important;
-        padding: 5px 15px !important;
+        background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%) !important;
+        color: #ffffff !important;
+        padding: 6px 18px !important;
         border-radius: 20px !important;
         display: inline-block !important;
         margin-bottom: 10px !important;
+        font-weight: 600 !important;
+        box-shadow: 0 0 20px rgba(0, 210, 255, 0.2);
+    }
+    
+    /* مربع البداية */
+    .start-box {
+        text-align: center;
+        padding: 50px 30px;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
+        border-radius: 20px;
+        border: 1px solid #2a2a4a;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+    
+    .start-box h2 {
+        color: #ffffff !important;
+        font-size: 2em;
+    }
+    
+    .start-box p {
+        color: #8899bb !important;
+    }
+    
+    /* التذييل */
+    footer, .stCaption {
+        color: #445566 !important;
+    }
+    
+    /* إصلاح ألوان الـ select box */
+    .stSelectbox div[data-baseweb="select"] {
+        background-color: #1a1a2e !important;
+        border-color: #2a2a4a !important;
+        color: #ffffff !important;
+    }
+    
+    .stSelectbox div[data-baseweb="select"] div {
+        color: #ffffff !important;
+    }
+    
+    /* أزرار الشريط الجانبي */
+    section[data-testid="stSidebar"] .stButton button {
+        background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%) !important;
+        border-color: #00d2ff !important;
+        color: #ffffff !important;
+    }
+    
+    section[data-testid="stSidebar"] .stButton button:hover {
+        transform: scale(1.02);
+        box-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
+    }
+    
+    /* تخصيص الأزرار في الشريط الجانبي */
+    .stSidebar .stMarkdown, .stSidebar div {
+        color: #ffffff !important;
+    }
+    
+    /* رسائل التحذير والمعلومات */
+    .stWarning {
+        background: #1a1a2e !important;
+        border-left: 5px solid #fdcb6e !important;
+    }
+    
+    .stInfo {
+        background: #1a1a2e !important;
+        border-left: 5px solid #00d2ff !important;
+    }
+    
+    /* تحسين التمرير */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #0a0a0a;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #2a2a4a;
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #3a7bd5;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ترجمة الأسئلة إلى العربية (حل مؤقت)
+# ترجمة الأسئلة إلى العربية
 def translate_question(q_data):
-    """ترجمة الأسئلة من الإنجليزية إلى العربية"""
-    # قاموس ترجمة بسيط للفئات
     categories = {
         'General Knowledge': 'معرفة عامة',
         'Science': 'علوم',
@@ -147,7 +252,6 @@ def translate_question(q_data):
         'Celebrities': 'مشاهير'
     }
     
-    # ترجمة الفئة
     category = q_data.get('category', 'معرفة عامة')
     for eng, ar in categories.items():
         if eng in category:
@@ -174,26 +278,22 @@ if 'questions' not in st.session_state:
     st.session_state.difficulty = 'hard'
     st.session_state.message = ""
     st.session_state.use_fallback = False
+    st.session_state.selected = None
 
 def load_questions():
-    """جلب الأسئلة من API"""
     try:
         url = f"https://opentdb.com/api.php?amount=10&difficulty={st.session_state.difficulty}&type=multiple"
-        
         response = requests.get(url, timeout=10)
         
         if response.status_code == 200:
             data = response.json()
-            
             if data['response_code'] == 0:
                 questions = []
                 for q in data['results']:
-                    # تنظيف النص من رموز HTML
                     question = html.unescape(q['question'])
                     correct_answer = html.unescape(q['correct_answer'])
                     incorrect_answers = [html.unescape(a) for a in q['incorrect_answers']]
                     
-                    # ترتيب الخيارات عشوائياً
                     options = [correct_answer] + incorrect_answers
                     random.shuffle(options)
                     
@@ -205,7 +305,6 @@ def load_questions():
                         'correct_answer': correct_answer
                     }
                     
-                    # ترجمة السؤال
                     q_data = translate_question(q_data)
                     questions.append(q_data)
                 
@@ -218,6 +317,7 @@ def load_questions():
                 st.session_state.game_over = False
                 st.session_state.message = ""
                 st.session_state.use_fallback = False
+                st.session_state.selected = None
                 return True
                 
     except Exception as e:
@@ -226,7 +326,6 @@ def load_questions():
     return False
 
 def load_fallback_questions():
-    """أسئلة احتياطية بالعربية"""
     questions = [
         {
             'question': 'ما هو أطول نهر في العالم؟',
@@ -309,6 +408,7 @@ def load_fallback_questions():
     st.session_state.game_over = False
     st.session_state.message = ""
     st.session_state.use_fallback = True
+    st.session_state.selected = None
 
 # عرض العنوان
 st.markdown('<h1 class="main-title">🧠 تحدي العقول</h1>', unsafe_allow_html=True)
@@ -316,9 +416,10 @@ st.markdown('<h1 class="main-title">🧠 تحدي العقول</h1>', unsafe_all
 # الشريط الجانبي
 with st.sidebar:
     st.markdown("## ⚙️ الإعدادات")
+    st.markdown("---")
     
     difficulty = st.selectbox(
-        "اختر الصعوبة:",
+        "🎯 اختر الصعوبة:",
         ['easy', 'medium', 'hard'],
         format_func=lambda x: {'easy': '🟢 سهل', 'medium': '🟡 متوسط', 'hard': '🔴 صعب'}[x],
         index=2
@@ -354,12 +455,12 @@ if not st.session_state.questions:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("""
-        <div style="text-align: center; padding: 40px 0; background: white; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h2 style="color: #1a1a2e;">🎯 اختبر معرفتك!</h2>
-            <p style="font-size: 1.1em; color: #555; margin: 20px 0;">
+        <div class="start-box">
+            <h2>🎯 اختبر معرفتك!</h2>
+            <p style="font-size: 1.1em; margin: 20px 0;">
                 أسئلة ثقافية عامة من جميع المجالات
             </p>
-            <p style="color: #777;">
+            <p style="color: #8899bb;">
                 📚 10 أسئلة في كل جولة<br>
                 ⭐ 10 نقاط لكل إجابة صحيحة<br>
                 🔥 اختر مستوى الصعوبة من القائمة الجانبية
@@ -384,12 +485,12 @@ else:
         st.progress((st.session_state.current_q) / total, text=f"السؤال {st.session_state.current_q + 1} من {total}")
         
         # الفئة
-        st.markdown(f'<span class="category-badge">{q["category"]}</span>', unsafe_allow_html=True)
+        st.markdown(f'<span class="category-badge">📌 {q["category"]}</span>', unsafe_allow_html=True)
         
         # السؤال
         st.markdown(f"""
         <div class="question-box">
-            <h3 style="color: #1a1a2e;">❓ {q['question']}</h3>
+            <h3>❓ {q['question']}</h3>
         </div>
         """, unsafe_allow_html=True)
         
@@ -399,39 +500,60 @@ else:
             with cols[i % 2]:
                 # تحديد نمط الزر بعد الإجابة
                 button_text = option
+                button_class = ""
+                
                 if st.session_state.answered:
                     if i == q['correct']:
                         button_text = "✅ " + option
-                    elif st.session_state.selected == i:
+                        button_class = "correct-answer"
+                    elif st.session_state.selected == i and i != q['correct']:
                         button_text = "❌ " + option
+                        button_class = "wrong-answer"
                 
-                if st.button(
-                    button_text,
-                    key=f"opt_{st.session_state.current_q}_{i}",
-                    disabled=st.session_state.answered,
-                    use_container_width=True
-                ):
-                    st.session_state.answered = True
-                    st.session_state.selected = i
-                    st.session_state.total += 1
-                    
-                    if i == q['correct']:
-                        st.session_state.score += 10
-                        st.session_state.correct += 1
-                        st.session_state.message = f"✅ صحيح! +10 نقاط"
-                    else:
-                        st.session_state.message = f"❌ خطأ! الإجابة الصحيحة: {q['correct_answer']}"
-                    
-                    st.rerun()
+                # استخدام HTML لتغيير لون الزر بعد الإجابة
+                if button_class:
+                    st.markdown(f"""
+                    <div style="
+                        background: {'linear-gradient(135deg, #00b894 0%, #00a36c 100%)' if '✅' in button_text else 'linear-gradient(135deg, #e17055 0%, #d63031 100%)'};
+                        padding: 14px;
+                        border-radius: 12px;
+                        border: 2px solid {'#00b894' if '✅' in button_text else '#e17055'};
+                        margin: 5px 0;
+                        text-align: center;
+                        color: white;
+                        font-weight: 500;
+                    ">
+                        {button_text}
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    if st.button(
+                        button_text,
+                        key=f"opt_{st.session_state.current_q}_{i}",
+                        disabled=st.session_state.answered,
+                        use_container_width=True
+                    ):
+                        st.session_state.answered = True
+                        st.session_state.selected = i
+                        st.session_state.total += 1
+                        
+                        if i == q['correct']:
+                            st.session_state.score += 10
+                            st.session_state.correct += 1
+                            st.session_state.message = f"✅ صحيح! +10 نقاط"
+                        else:
+                            st.session_state.message = f"❌ خطأ! الإجابة الصحيحة: {q['correct_answer']}"
+                        
+                        st.rerun()
         
         # عرض التغذية الراجعة
         if st.session_state.answered:
             st.markdown("---")
             
             if "صحيح" in st.session_state.message:
-                st.success(st.session_state.message)
+                st.success(f"🎉 {st.session_state.message}")
             else:
-                st.error(st.session_state.message)
+                st.error(f"😅 {st.session_state.message}")
             
             if st.button("⏩ السؤال التالي", use_container_width=True):
                 if st.session_state.current_q + 1 < len(st.session_state.questions):
@@ -462,6 +584,7 @@ else:
             st.metric("⭐ مجموع النقاط", st.session_state.score)
         
         # تقييم الأداء
+        st.markdown("---")
         if correct == total:
             st.success("🌟🌟🌟 **مذهل! إجابة كاملة! أنت عبقري!**")
         elif correct >= total * 0.7:
