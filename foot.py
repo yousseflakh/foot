@@ -7,7 +7,7 @@ from datetime import datetime
 
 # إعداد الصفحة
 st.set_page_config(
-    page_title="🧠 تحدي العقول - صعب جداً",
+    page_title="🧠 تحدي العقول ",
     page_icon="🧠",
     layout="wide"
 )
