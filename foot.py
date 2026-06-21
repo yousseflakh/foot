@@ -678,7 +678,7 @@ def login_screen():
             "🎯 اختر مستوى الصعوبة:",
             ['سهل', 'متوسط', 'صعب', 'صعب جداً'],
             index=2,
-            format_func=lambda x: f"{'🟢' if x=='سهل' else '🟡' if x=='متوسط' else '🟠' if x=='صعب' else '🔴'}
+           
         )
         
         col1, col2, col3 = st.columns([1, 2, 1])
