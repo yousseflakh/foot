@@ -2,12 +2,13 @@ import streamlit as st
 import random
 import requests
 import re
-import html
+import json
+import os
 from datetime import datetime
 
 # إعداد الصفحة
 st.set_page_config(
-    page_title="🧠 تحدي العقول ",
+    page_title="🧠 تحدي العقول - صعب جداً",
     page_icon="🧠",
     layout="wide"
 )
@@ -216,10 +217,101 @@ st.markdown("""
         background: #f5576c;
         color: white;
     }
+    
+    /* تنسيق لوحة المتصدرين */
+    .leaderboard-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 15px;
+        margin: 5px 0;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-radius: 10px;
+        border: 1px solid #2a2a4a;
+        transition: all 0.3s;
+    }
+    .leaderboard-item:hover {
+        border-color: #f5576c;
+        transform: scale(1.02);
+    }
+    .leaderboard-rank {
+        font-weight: bold;
+        color: #f5576c;
+        min-width: 40px;
+    }
+    .leaderboard-name {
+        flex: 1;
+        margin: 0 15px;
+    }
+    .leaderboard-score {
+        font-weight: bold;
+        color: #00b894;
+    }
+    .leaderboard-date {
+        color: #8899bb;
+        font-size: 0.8em;
+        margin-left: 15px;
+    }
+    .top-rank {
+        background: linear-gradient(135deg, #2a1a2e 0%, #1a2a2e 100%) !important;
+        border-color: #f5576c !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# ==================== جلب الأسئلة الصعبة من ويكيبيديا ====================
+# ==================== نظام تخزين النتائج ====================
+LEADERBOARD_FILE = "leaderboard.json"
+
+def load_leaderboard():
+    """تحميل لوحة المتصدرين من الملف"""
+    if os.path.exists(LEADERBOARD_FILE):
+        try:
+            with open(LEADERBOARD_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+def save_leaderboard(leaderboard):
+    """حفظ لوحة المتصدرين إلى الملف"""
+    try:
+        with open(LEADERBOARD_FILE, 'w', encoding='utf-8') as f:
+            json.dump(leaderboard, f, ensure_ascii=False, indent=2)
+        return True
+    except:
+        return False
+
+def add_score_to_leaderboard(name, score, correct, total):
+    """إضافة نتيجة جديدة إلى لوحة المتصدرين"""
+    leaderboard = load_leaderboard()
+    
+    # إضافة النتيجة الجديدة
+    leaderboard.append({
+        'name': name,
+        'score': score,
+        'correct': correct,
+        'total': total,
+        'date': datetime.now().strftime("%Y-%m-%d %H:%M")
+    })
+    
+    # ترتيب حسب النقاط تنازلياً
+    leaderboard.sort(key=lambda x: x['score'], reverse=True)
+    
+    # الاحتفاظ بأفضل 100 نتيجة فقط
+    if len(leaderboard) > 100:
+        leaderboard = leaderboard[:100]
+    
+    save_leaderboard(leaderboard)
+    return leaderboard
+
+def get_player_rank(name):
+    """الحصول على ترتيب اللاعب"""
+    leaderboard = load_leaderboard()
+    for i, entry in enumerate(leaderboard):
+        if entry['name'] == name:
+            return i + 1
+    return None
+
+# ==================== جلب الأسئلة الصعبة ====================
 def fetch_wikipedia_articles(limit=30):
     """جلب مقالات عشوائية من ويكيبيديا العربية"""
     try:
@@ -272,26 +364,21 @@ def generate_hard_questions(num_questions=10):
     """توليد أسئلة صعبة من ويكيبيديا"""
     questions = []
     
-    # جلب مقالات عشوائية
     articles = fetch_wikipedia_articles(limit=num_questions * 3)
     
     if not articles:
         return None
     
-    # تصنيفات عشوائية
     categories = ['تاريخ', 'علوم', 'جغرافيا', 'ثقافة', 'أدب', 'فلسفة', 'سياسة', 'اقتصاد']
     
     for article in articles[:num_questions * 2]:
         title = article.get('title', '')
         
-        # تجاهل العناوين القصيرة أو غير المناسبة
         if len(title) < 8 or len(title) > 60:
             continue
         
-        # جلب تفاصيل المقال
         extract = fetch_article_details(title)
         
-        # أنواع مختلفة من الأسئلة الصعبة
         question_types = [
             f'ما هو/من هو "{title}" في التاريخ؟',
             f'ماذا تعرف عن "{title}"؟',
@@ -300,11 +387,9 @@ def generate_hard_questions(num_questions=10):
             f'من هو الشخصية المعروفة "{title}"؟'
         ]
         
-        # جلب 3 خيارات خاطئة من مقالات أخرى
         other_articles = [a.get('title', '') for a in articles if a.get('title') != title]
         wrong_options = random.sample(other_articles, min(3, len(other_articles)))
         
-        # إذا لم تكن هناك خيارات كافية، استخدم خيارات احتياطية صعبة
         if len(wrong_options) < 3:
             fallback_hard = [
                 'ابن خلدون', 'الفارابي', 'البيروني', 'الكندي', 'الرازي',
@@ -315,7 +400,6 @@ def generate_hard_questions(num_questions=10):
             additional = [f for f in fallback_hard if f not in wrong_options and f != title]
             wrong_options.extend(random.sample(additional, min(3 - len(wrong_options), len(additional))))
         
-        # خلط الخيارات
         options = [title] + wrong_options[:3]
         random.shuffle(options)
         
@@ -334,9 +418,8 @@ def generate_hard_questions(num_questions=10):
     
     return questions
 
-# ==================== أسئلة محلية صعبة جداً ====================
+# ==================== أسئلة محلية صعبة ====================
 HARD_LOCAL_QUESTIONS = [
-    # تاريخ صعب
     {
         'question': 'في أي عام تم سقوط الأندلس نهائياً؟',
         'options': ['1492', '1493', '1494', '1495'],
@@ -377,8 +460,6 @@ HARD_LOCAL_QUESTIONS = [
         'correct_answer': '1453',
         'difficulty': 'صعب جداً'
     },
-    
-    # علوم صعبة
     {
         'question': 'من هو مكتشف الدورة الدموية الصغرى؟',
         'options': ['ابن النفيس', 'جالينوس', 'ابن سينا', 'الرازي'],
@@ -396,16 +477,6 @@ HARD_LOCAL_QUESTIONS = [
         'difficulty': 'صعب جداً'
     },
     {
-        'question': 'من هو مؤسس علم المناعة؟',
-        'options': ['ابن زهر', 'الرازي', 'ابن سينا', 'ابن النفيس'],
-        'correct': 0,
-        'category': 'علوم',
-        'correct_answer': 'ابن زهر',
-        'difficulty': 'صعب جداً'
-    },
-    
-    # جغرافيا صعبة
-    {
         'question': 'ما هي أعلى قمة جبلية في أفريقيا؟',
         'options': ['جبل كليمنجارو', 'جبل كينيا', 'جبل راس دشين', 'جبل كروجر'],
         'correct': 0,
@@ -421,8 +492,6 @@ HARD_LOCAL_QUESTIONS = [
         'correct_answer': 'خندق ماريانا',
         'difficulty': 'صعب جداً'
     },
-    
-    # أدب صعب
     {
         'question': 'من هو صاحب ديوان "الحماسة"؟',
         'options': ['أبو تمام', 'المتنبي', 'الفرزدق', 'جرير'],
@@ -439,8 +508,6 @@ HARD_LOCAL_QUESTIONS = [
         'correct_answer': 'ابن الأثير',
         'difficulty': 'صعب جداً'
     },
-    
-    # دين صعب
     {
         'question': 'من هو الصحابي الملقب بـ "الفاروق"؟',
         'options': ['عمر بن الخطاب', 'أبو بكر الصديق', 'عثمان بن عفان', 'علي بن أبي طالب'],
@@ -457,8 +524,6 @@ HARD_LOCAL_QUESTIONS = [
         'correct_answer': 'سورة يس',
         'difficulty': 'صعب جداً'
     },
-    
-    # ثقافة عامة صعبة
     {
         'question': 'من هو مؤسس علم العروض؟',
         'options': ['الخليل بن أحمد', 'سيبويه', 'الفراهيدي', 'الأصمعي'],
@@ -478,23 +543,38 @@ HARD_LOCAL_QUESTIONS = [
 ]
 
 # تهيئة حالة اللعبة
+if 'player_name' not in st.session_state:
+    st.session_state.player_name = ""
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
 if 'questions' not in st.session_state:
     st.session_state.questions = []
+if 'current_q' not in st.session_state:
     st.session_state.current_q = 0
+if 'score' not in st.session_state:
     st.session_state.score = 0
+if 'total' not in st.session_state:
     st.session_state.total = 0
+if 'correct' not in st.session_state:
     st.session_state.correct = 0
+if 'answered' not in st.session_state:
     st.session_state.answered = False
+if 'game_over' not in st.session_state:
     st.session_state.game_over = False
+if 'message' not in st.session_state:
     st.session_state.message = ""
+if 'selected' not in st.session_state:
     st.session_state.selected = None
+if 'source' not in st.session_state:
     st.session_state.source = 'local'
+if 'total_questions_loaded' not in st.session_state:
     st.session_state.total_questions_loaded = 0
+if 'game_started' not in st.session_state:
+    st.session_state.game_started = False
 
 def load_hard_questions(num=10):
     """تحميل أسئلة صعبة"""
-    # محاولة جلب من ويكيبيديا أولاً
-    with st.spinner("🌐 جاري جلب أسئلة صعبة من ويكيبيديا..."):
+    with st.spinner("🌐 جاري جلب أسئلة صعبة..."):
         questions = generate_hard_questions(num)
         
         if questions and len(questions) >= num:
@@ -503,11 +583,9 @@ def load_hard_questions(num=10):
             st.session_state.total_questions_loaded = len(questions)
             return True
     
-    # استخدام الأسئلة المحلية الصعبة
     st.warning("⚠️ استخدام الأسئلة المحلية الصعبة")
     available = HARD_LOCAL_QUESTIONS.copy()
     
-    # إذا كان الطلب أكثر من المتاح، كرر الأسئلة
     if len(available) < num:
         while len(available) < num:
             available.extend(random.sample(HARD_LOCAL_QUESTIONS, min(num - len(available), len(HARD_LOCAL_QUESTIONS))))
@@ -524,87 +602,172 @@ def load_more_questions():
     new_questions = generate_hard_questions(10)
     
     if new_questions:
-        # إضافة أسئلة جديدة إلى القائمة الحالية
         st.session_state.questions.extend(new_questions)
         st.session_state.total_questions_loaded = len(st.session_state.questions)
         return True
     else:
-        # استخدام أسئلة محلية
         new_local = random.sample(HARD_LOCAL_QUESTIONS, min(10, len(HARD_LOCAL_QUESTIONS)))
         st.session_state.questions.extend(new_local)
         st.session_state.total_questions_loaded = len(st.session_state.questions)
         return True
 
-# عرض العنوان
-st.markdown('<h1 class="main-title">🧠 تحدي العقول - صعب جداً</h1>', unsafe_allow_html=True)
+def reset_game():
+    """إعادة تعيين اللعبة"""
+    st.session_state.current_q = 0
+    st.session_state.score = 0
+    st.session_state.total = 0
+    st.session_state.correct = 0
+    st.session_state.answered = False
+    st.session_state.game_over = False
+    st.session_state.message = ""
+    st.session_state.selected = None
+    st.session_state.game_started = True
 
-# الشريط الجانبي
-with st.sidebar:
-    st.markdown("## ⚙️ الإعدادات")
-    st.markdown("---")
-    
-    num_questions = st.slider("📚 عدد الأسئلة في الجولة:", 5, 30, 10)
-    
-    if st.button("🚀 بدء لعبة جديدة", use_container_width=True):
-        load_hard_questions(num_questions)
-        st.rerun()
-    
-    st.markdown("---")
-    
-    if st.session_state.questions:
-        if st.button("➕ تحميل المزيد من الأسئلة", use_container_width=True):
-            with st.spinner("جاري تحميل المزيد..."):
-                load_more_questions()
-            st.rerun()
-    
-    st.markdown("---")
-    
-    if st.session_state.total > 0:
-        st.markdown("## 📊 الإحصائيات")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("⭐ النقاط", st.session_state.score)
-        with col2:
-            pct = (st.session_state.correct / st.session_state.total * 100) if st.session_state.total > 0 else 0
-            st.metric("✅ النجاح", f"{pct:.0f}%")
-        
-        st.metric("📝 الإجابات", f"{st.session_state.correct}/{st.session_state.total}")
-        st.metric("📚 إجمالي الأسئلة المحملة", st.session_state.total_questions_loaded)
-        
-        if st.session_state.source:
-            st.info(f"📌 المصدر: {st.session_state.source}")
+def finish_game():
+    """إنهاء اللعبة وحفظ النتيجة"""
+    if st.session_state.total > 0 and st.session_state.player_name:
+        # إضافة النتيجة إلى لوحة المتصدرين
+        add_score_to_leaderboard(
+            st.session_state.player_name,
+            st.session_state.score,
+            st.session_state.correct,
+            st.session_state.total
+        )
+        st.session_state.game_over = True
 
-# المحتوى الرئيسي
-if not st.session_state.questions:
-    # شاشة البداية
+# ==================== واجهة تسجيل الدخول ====================
+def login_screen():
+    """شاشة تسجيل الدخول"""
+    st.markdown('<h1 class="main-title">🧠 تحدي العقول - صعب جداً</h1>', unsafe_allow_html=True)
+    
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("""
         <div class="start-box">
-            <h2>🎯 تحدى نفسك!</h2>
-            <p style="font-size: 1.1em; margin: 20px 0; color: #f5576c;">
-                🔥 أسئلة صعبة جداً للمحترفين فقط
+            <h2>👋 مرحباً بك!</h2>
+            <p style="font-size: 1.1em; margin: 20px 0;">
+                أدخل اسمك لبدء التحدي
             </p>
-            <p style="color: #8899bb;">
-                📚 أسئلة من ويكيبيديا العربية<br>
-                🧠 أسئلة تاريخية وعلمية وأدبية<br>
-                ⭐ 10 نقاط لكل إجابة صحيحة<br>
-                ➕ يمكنك تحميل المزيد من الأسئلة<br>
-                📖 أسئلة غير محدودة
-            </p>
-            <div style="margin-top: 20px; padding: 10px; background: #2a1a2e; border-radius: 10px; border: 1px solid #f5576c;">
-                <span style="color: #f5576c;">⚠️ تحذير: هذه الأسئلة مخصصة للخبراء</span>
-            </div>
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("🎮 ابدأ التحدي", use_container_width=True):
-            load_hard_questions(num_questions)
-            st.rerun()
+        name = st.text_input("👤 اسم اللاعب:", max_chars=30, placeholder="اكتب اسمك هنا...")
+        
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🚀 دخول", use_container_width=True):
+                if name and name.strip():
+                    st.session_state.player_name = name.strip()
+                    st.session_state.logged_in = True
+                    st.rerun()
+                else:
+                    st.error("❌ الرجاء إدخال اسمك!")
+        
+        # عرض لوحة المتصدرين في شاشة الدخول
+        st.markdown("---")
+        st.markdown("### 🏆 لوحة المتصدرين")
+        display_leaderboard(limit=5)
 
-else:
-    # عرض الأسئلة
-    if not st.session_state.game_over and st.session_state.current_q < len(st.session_state.questions):
+# ==================== عرض لوحة المتصدرين ====================
+def display_leaderboard(limit=10):
+    """عرض لوحة المتصدرين"""
+    leaderboard = load_leaderboard()
+    
+    if not leaderboard:
+        st.info("📭 لا توجد نتائج حتى الآن. كن أول من يلعب!")
+        return
+    
+    # عرض أفضل النتائج
+    for i, entry in enumerate(leaderboard[:limit]):
+        rank = i + 1
+        medal = ""
+        if rank == 1:
+            medal = "🥇"
+        elif rank == 2:
+            medal = "🥈"
+        elif rank == 3:
+            medal = "🥉"
+        
+        # تمييز صف اللاعب الحالي
+        is_current = entry['name'] == st.session_state.player_name
+        
+        st.markdown(f"""
+        <div class="leaderboard-item {'top-rank' if is_current else ''}" style="{ 'border-color: #f5576c; border-width: 2px;' if is_current else '' }">
+            <span class="leaderboard-rank">{medal} #{rank}</span>
+            <span class="leaderboard-name">{entry['name']} { '👈' if is_current else '' }</span>
+            <span class="leaderboard-score">⭐ {entry['score']}</span>
+            <span class="leaderboard-date">{entry['date']}</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # عرض تفاصيل إضافية
+        if is_current:
+            st.caption(f"📊 {entry['correct']}/{entry['total']} إجابات صحيحة")
+
+# ==================== شاشة اللعب ====================
+def game_screen():
+    """شاشة اللعب الرئيسية"""
+    # العنوان مع اسم اللاعب
+    st.markdown(f'<h1 class="main-title">🧠 تحدي العقول - صعب جداً</h1>', unsafe_allow_html=True)
+    
+    # الترحيب باللاعب
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.markdown(f"### 👋 مرحباً {st.session_state.player_name}!")
+    with col2:
+        if st.button("🚪 تسجيل خروج"):
+            st.session_state.logged_in = False
+            st.session_state.player_name = ""
+            st.rerun()
+    
+    st.markdown("---")
+    
+    # الشريط الجانبي
+    with st.sidebar:
+        st.markdown(f"### 👤 {st.session_state.player_name}")
+        st.markdown("---")
+        
+        if st.button("➕ تحميل المزيد من الأسئلة", use_container_width=True):
+            with st.spinner("جاري تحميل المزيد..."):
+                load_more_questions()
+            st.rerun()
+        
+        if st.button("🔄 بدء جولة جديدة", use_container_width=True):
+            load_hard_questions(10)
+            reset_game()
+            st.rerun()
+        
+        st.markdown("---")
+        
+        if st.session_state.total > 0:
+            st.markdown("## 📊 إحصائياتك")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("⭐ النقاط", st.session_state.score)
+            with col2:
+                pct = (st.session_state.correct / st.session_state.total * 100) if st.session_state.total > 0 else 0
+                st.metric("✅ النجاح", f"{pct:.0f}%")
+            
+            st.metric("📝 الإجابات", f"{st.session_state.correct}/{st.session_state.total}")
+            
+            # ترتيب اللاعب
+            rank = get_player_rank(st.session_state.player_name)
+            if rank:
+                st.metric("🏆 الترتيب", f"#{rank}")
+        
+        st.markdown("---")
+        st.markdown("### 🏆 المتصدرين")
+        display_leaderboard(limit=5)
+    
+    # المحتوى الرئيسي - عرض الأسئلة
+    if not st.session_state.questions:
+        st.info("📚 اضغط على 'بدء جولة جديدة' لبدء التحدي")
+        if st.button("🎮 بدء التحدي", use_container_width=True):
+            load_hard_questions(10)
+            reset_game()
+            st.rerun()
+    
+    elif not st.session_state.game_over and st.session_state.current_q < len(st.session_state.questions):
         q = st.session_state.questions[st.session_state.current_q]
         total = len(st.session_state.questions)
         
@@ -684,7 +847,6 @@ else:
             else:
                 st.error(f"😅 {st.session_state.message}")
             
-            # عرض معلومات إضافية عن الإجابة
             if 'extract' in q and q['extract']:
                 with st.expander("📖 معلومات إضافية"):
                     st.write(q['extract'])
@@ -699,7 +861,7 @@ else:
                         st.session_state.message = ""
                         st.rerun()
                     else:
-                        st.session_state.game_over = True
+                        finish_game()
                         st.rerun()
             with col2:
                 if st.button("➕ تحميل المزيد", use_container_width=True):
@@ -727,24 +889,4 @@ else:
         # تقييم الأداء
         st.markdown("---")
         if correct == total:
-            st.success("🌟🌟🌟 **عبقري! إجابة كاملة في أسئلة صعبة جداً!**")
-        elif correct >= total * 0.7:
-            st.success("⭐ **أداء ممتاز! أنت خبير حقيقي!**")
-        elif correct >= total * 0.5:
-            st.info("📚 **أداء جيد! مع المزيد ستصل للاحتراف!**")
-        else:
-            st.warning("💪 **لا تستسلم! هذه الأسئلة صعبة فعلاً!**")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🔄 لعب مرة أخرى", use_container_width=True):
-                load_hard_questions(num_questions)
-                st.rerun()
-        with col2:
-            if st.button("➕ تحميل المزيد", use_container_width=True):
-                with st.spinner("جاري تحميل المزيد..."):
-                    load_more_questions()
-                    st.session_state.game_over = False
-                st.rerun()
-
-st.markdown("---")
+            st.success("🌟🌟🌟
